@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lava Jato Expresso - Gestão Financeira e Operacional</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        amber: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                        },
+                        zinc: {
+                            800: '#27272a',
+                            900: '#18181b',
+                            950: '#09090b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Libraries (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-zinc-100 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-zinc-950">
+
+    <!-- App Wrapper -->
+    <div class="flex h-screen overflow-hidden">
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="w-64 bg-zinc-950 border-r border-zinc-800/80 flex flex-col flex-shrink-0 z-30 transition-all duration-300">
+            <!-- Sidebar Header with Official Logo -->
+            <div class="h-20 flex items-center justify-between px-4 border-b border-zinc-800/80">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-zinc-900 border border-amber-500/40 flex items-center justify-center p-1 shadow-lg shadow-amber-500/10 sidebar-logo-icon">
+                        <!-- Car Silhouette SVG Icon matching logo -->
+                        <svg viewBox="0 0 200 60" class="w-full h-full">
+                            <path d="M 10 40 Q 40 10, 100 10 Q 160 10, 190 40" fill="none" stroke="#d97706" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M 20 45 Q 60 25, 110 25 Q 150 25, 180 45" fill="none" stroke="#e4e4e7" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="sidebar-header-title">
+                        <h1 class="text-sm font-black text-white uppercase tracking-wider leading-none">LAVA JATO</h1>
+                        <p class="text-[10px] font-bold text-amber-500 tracking-[0.2em] mt-1 uppercase">— EXPRESSO —</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+                <a href="#" data-tab="dashboard" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-black bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20 transition-all">
+                    <i class="fa-solid fa-chart-pie text-base w-5 text-center"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+                <a href="#" data-tab="financeiro" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 transition-all">
+                    <i class="fa-solid fa-wallet text-base w-5 text-center"></i>
+                    <span class="sidebar-text">Financeiro</span>
+                </a>
+                <a href="#" data-tab="servicos" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 transition-all">
+                    <i class="fa-solid fa-spray-can-sparkles text-base w-5 text-center"></i>
+                    <span class="sidebar-text">Serviços</span>
+                </a>
+                <a href="#" data-tab="estoque" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 transition-all">
+                    <i class="fa-solid fa-boxes-stacked text-base w-5 text-center"></i>
+                    <span class="sidebar-text">Estoque & Insumos</span>
+                </a>
+                <a href="#" data-tab="funcionarios" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 transition-all">
+                    <i class="fa-solid fa-users text-base w-5 text-center"></i>
+                    <span class="sidebar-text">Funcionários</span>
+                </a>
+                <a href="#" data-tab="simuladores" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 transition-all">
+                    <i class="fa-solid fa-calculator text-base w-5 text-center"></i>
+                    <span class="sidebar-text">Simuladores</span>
+                </a>
+                <a href="#" data-tab="relatorios" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 transition-all">
+                    <i class="fa-solid fa-file-invoice-dollar text-base w-5 text-center"></i>
+                    <span class="sidebar-text">Relatórios</span>
+                </a>
+                <a href="#" data-tab="configuracoes" class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 transition-all">
+                    <i class="fa-solid fa-gear text-base w-5 text-center"></i>
+                    <span class="sidebar-text">Configurações</span>
+                </a>
+            </nav>
+
+            <!-- Sidebar Footer Status -->
+            <div class="p-3 border-t border-zinc-800/80">
+                <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-400 text-xs">
+                    <div class="flex items-center gap-2 sidebar-text">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span class="text-[11px] font-medium text-zinc-300">IndexedDB Ativo</span>
+                    </div>
+                    <i class="fa-solid fa-database text-xs text-amber-500"></i>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+            <!-- TOPBAR HEADER -->
+            <header id="topbar" class="h-20 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 flex items-center justify-between z-20 backdrop-blur-md">
+                <div class="flex items-center gap-4">
+                    <button id="btn-toggle-sidebar" class="p-2.5 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-white rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                    </button>
+                    <!-- Header Logo & Branding -->
+                    <div class="flex items-center gap-3">
+                        <div>
+                            <h2 id="topbar-company-name" class="text-base font-black text-zinc-900 dark:text-white uppercase tracking-wide leading-tight">LAVA JATO EXPRESSO</h2>
+                            <p class="text-[11px] text-amber-500 font-bold uppercase tracking-wider">Sistema de Gestão Financeira & Operacional</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Topbar Right Controls -->
+                <div class="flex items-center gap-3">
+                    <!-- Quick Action Buttons -->
+                    <button onclick="if(window.FinanceiroModule) FinanceiroModule.openNovaReceitaModal()" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md shadow-emerald-600/20 transition">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>+ Receita</span>
+                    </button>
+                    <button onclick="if(window.FinanceiroModule) FinanceiroModule.openNovaDespesaModal()" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md shadow-rose-600/20 transition">
+                        <i class="fa-solid fa-minus text-xs"></i>
+                        <span>+ Despesa</span>
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button id="btn-toggle-theme" class="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition">
+                        <i class="fa-solid fa-moon dark:hidden"></i>
+                        <i class="fa-solid fa-sun hidden dark:block text-amber-400"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- MAIN VIEW CONTAINER -->
+            <main class="flex-1 overflow-y-auto p-6 space-y-6">
+
+                <!-- 1. DASHBOARD VIEW -->
+                <section id="view-dashboard" class="view-section space-y-6">
+                    <!-- Top KPI Cards Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="card-erp bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Receita Hoje</p>
+                                <h3 id="kpi-rec-dia" class="text-2xl font-black text-zinc-900 dark:text-white mt-1">R$ 0,00</h3>
+                                <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1"><i class="fa-solid fa-arrow-trend-up"></i> Atualizado em tempo real</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl font-black border border-amber-500/20">
+                                <i class="fa-solid fa-dollar-sign"></i>
+                            </div>
+                        </div>
+
+                        <div class="card-erp bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Receita Mensal</p>
+                                <h3 id="kpi-rec-mes" class="text-2xl font-black text-zinc-900 dark:text-white mt-1">R$ 0,00</h3>
+                                <p class="text-[11px] text-amber-500 font-bold mt-1">Mês atual</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl font-black border border-amber-500/20">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </div>
+                        </div>
+
+                        <div class="card-erp bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Lucro Líquido</p>
+                                <h3 id="kpi-lucro-liquido" class="text-2xl font-black text-zinc-900 dark:text-white mt-1">R$ 0,00</h3>
+                                <p class="text-[11px] text-emerald-500 font-bold mt-1">Margem: <span id="kpi-margem-lucro">0%</span></p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl font-black border border-emerald-500/20">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                        </div>
+
+                        <div class="card-erp bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Ticket Médio</p>
+                                <h3 id="kpi-ticket-medio" class="text-2xl font-black text-zinc-900 dark:text-white mt-1">R$ 0,00</h3>
+                                <p class="text-[11px] text-amber-500 font-bold mt-1"><span id="kpi-qtd-veiculos">0</span> veículos lavados</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl font-black border border-amber-500/20">
+                                <i class="fa-solid fa-car"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Meta Mensal Bar -->
+                    <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-2">
+                        <div class="flex items-center justify-between text-xs font-black">
+                            <span class="text-zinc-800 dark:text-zinc-200"><i class="fa-solid fa-bullseye text-amber-500 mr-1.5"></i> Meta de Faturamento Mensal</span>
+                            <span id="kpi-meta-val" class="text-zinc-500 dark:text-zinc-400">R$ 0,00 / R$ 35.000,00</span>
+                        </div>
+                        <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-3 overflow-hidden p-0.5">
+                            <div id="kpi-meta-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px] text-zinc-400 font-medium">
+                            <span id="kpi-meta-percent" class="text-amber-500 font-bold">0% Atingido</span>
+                            <span>Acompanhamento em tempo real</span>
+                        </div>
+                    </div>
+
+                    <!-- Secondary KPIs Summary Row -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Ponto de Equilíbrio</span>
+                            <span id="kpi-ponto-equilibrio" class="text-sm font-black text-zinc-800 dark:text-zinc-100">R$ 0,00</span>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Valor em Estoque</span>
+                            <span id="kpi-valor-estoque" class="text-sm font-black text-zinc-800 dark:text-zinc-100">R$ 0,00</span>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Despesas Fixas</span>
+                            <span id="kpi-despesas-fixas" class="text-sm font-black text-rose-600 dark:text-rose-400">R$ 0,00</span>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Despesas Variáveis</span>
+                            <span id="kpi-despesas-variaveis" class="text-sm font-black text-amber-600 dark:text-amber-400">R$ 0,00</span>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Equipe Ativa</span>
+                            <span id="kpi-func-ativos" class="text-sm font-black text-zinc-800 dark:text-zinc-100">0</span>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Receita / Func.</span>
+                            <span id="kpi-rec-func" class="text-sm font-black text-amber-500">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Alerts Container -->
+                    <div id="dashboard-alertas" class="space-y-2"></div>
+
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Chart 1: Receita Diária -->
+                        <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <h3 class="text-sm font-extrabold text-zinc-800 dark:text-white mb-4 flex items-center justify-between">
+                                <span>Receita Diária (Últimos 7 dias)</span>
+                                <i class="fa-solid fa-chart-column text-amber-500"></i>
+                            </h3>
+                            <div class="h-64 relative">
+                                <canvas id="chart-receita-diaria"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Receita Mensal vs Meta -->
+                        <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <h3 class="text-sm font-extrabold text-zinc-800 dark:text-white mb-4 flex items-center justify-between">
+                                <span>Evolução Mensal vs Meta</span>
+                                <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                            </h3>
+                            <div class="h-64 relative">
+                                <canvas id="chart-receita-mensal"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 3: Despesas por Categoria -->
+                        <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <h3 class="text-sm font-extrabold text-zinc-800 dark:text-white mb-4 flex items-center justify-between">
+                                <span>Distribuição de Despesas</span>
+                                <i class="fa-solid fa-chart-pie text-purple-500"></i>
+                            </h3>
+                            <div class="h-64 relative">
+                                <canvas id="chart-despesas-categoria"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 4: Fluxo de Caixa -->
+                        <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <h3 class="text-sm font-extrabold text-zinc-800 dark:text-white mb-4 flex items-center justify-between">
+                                <span>Fluxo de Caixa (Entradas e Saídas)</span>
+                                <i class="fa-solid fa-money-bill-transfer text-amber-500"></i>
+                            </h3>
+                            <div class="h-64 relative">
+                                <canvas id="chart-fluxo-caixa-dash"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 5: Serviços Mais Vendidos -->
+                        <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <h3 class="text-sm font-extrabold text-zinc-800 dark:text-white mb-4 flex items-center justify-between">
+                                <span>Serviços Mais Vendidos</span>
+                                <i class="fa-solid fa-list-check text-indigo-500"></i>
+                            </h3>
+                            <div class="h-64 relative">
+                                <canvas id="chart-servicos-populares"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 6: Desempenho Funcionários -->
+                        <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <h3 class="text-sm font-extrabold text-zinc-800 dark:text-white mb-4 flex items-center justify-between">
+                                <span>Receita por Funcionário</span>
+                                <i class="fa-solid fa-users-viewfinder text-amber-500"></i>
+                            </h3>
+                            <div class="h-64 relative">
+                                <canvas id="chart-funcionarios-dash"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Atendimentos Table -->
+                    <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                        <h3 class="text-sm font-extrabold text-zinc-800 dark:text-white mb-4">Últimos Atendimentos Realizados</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-black text-zinc-400 uppercase">
+                                        <th class="py-2.5 px-4">Data</th>
+                                        <th class="py-2.5 px-4">Cliente</th>
+                                        <th class="py-2.5 px-4">Serviço</th>
+                                        <th class="py-2.5 px-4">Forma Pagto</th>
+                                        <th class="py-2.5 px-4 text-right">Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-recentes"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. FINANCEIRO VIEW -->
+                <section id="view-financeiro" class="view-section space-y-6 hidden">
+                    <!-- Financeiro Top Nav Subtabs -->
+                    <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                        <div class="flex gap-2">
+                            <button data-tab="receitas" class="fin-tab-btn px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-zinc-950 shadow-sm transition">
+                                <i class="fa-solid fa-arrow-down-left mr-1.5"></i> Receitas
+                            </button>
+                            <button data-tab="despesas" class="fin-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-800 transition">
+                                <i class="fa-solid fa-arrow-up-right mr-1.5"></i> Despesas
+                            </button>
+                            <button data-tab="fluxo" class="fin-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-800 transition">
+                                <i class="fa-solid fa-chart-line mr-1.5"></i> Fluxo de Caixa
+                            </button>
+                            <button data-tab="dre" class="fin-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-800 transition">
+                                <i class="fa-solid fa-file-invoice mr-1.5"></i> DRE Sintético
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- RECEITAS SUBTAB -->
+                    <div id="fin-content-receitas" class="fin-tab-content space-y-4">
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="relative w-full sm:w-72">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-zinc-400 text-xs"></i>
+                                <input type="text" id="search-receita" placeholder="Buscar receita por cliente ou serviço..." class="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-100 focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                                <span class="text-xs font-bold text-zinc-400">Total: <strong id="total-receitas-list" class="text-emerald-500 text-sm">R$ 0,00</strong></span>
+                                <button onclick="if(window.FinanceiroModule) FinanceiroModule.openNovaReceitaModal()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition shadow-md shadow-emerald-600/20">
+                                    + Lançar Receita
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-black text-zinc-400 uppercase">
+                                            <th class="py-3 px-4">Data</th>
+                                            <th class="py-3 px-4">Cliente</th>
+                                            <th class="py-3 px-4">Serviço</th>
+                                            <th class="py-3 px-4">Funcionário</th>
+                                            <th class="py-3 px-4">Forma Pagto</th>
+                                            <th class="py-3 px-4 text-right">Valor</th>
+                                            <th class="py-3 px-4 text-right">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-receitas"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DESPESAS SUBTAB -->
+                    <div id="fin-content-despesas" class="fin-tab-content space-y-4 hidden">
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="relative w-full sm:w-72">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-zinc-400 text-xs"></i>
+                                <input type="text" id="search-despesa" placeholder="Buscar despesa..." class="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-100 focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div class="flex items-center gap-4 w-full sm:w-auto justify-end">
+                                <div class="text-xs font-medium text-zinc-400 space-x-2">
+                                    <span>Fixas: <strong id="total-despesas-fixas-list" class="text-purple-400 font-bold">R$ 0,00</strong></span>
+                                    <span>Variáveis: <strong id="total-despesas-var-list" class="text-amber-500 font-bold">R$ 0,00</strong></span>
+                                </div>
+                                <button onclick="if(window.FinanceiroModule) FinanceiroModule.openNovaDespesaModal()" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold transition shadow-md shadow-rose-600/20">
+                                    + Nova Despesa
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-black text-zinc-400 uppercase">
+                                            <th class="py-3 px-4">Data</th>
+                                            <th class="py-3 px-4">Tipo</th>
+                                            <th class="py-3 px-4">Categoria</th>
+                                            <th class="py-3 px-4">Item / Descrição</th>
+                                            <th class="py-3 px-4">Observações</th>
+                                            <th class="py-3 px-4 text-right">Valor</th>
+                                            <th class="py-3 px-4 text-right">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-despesas"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FLUXO DE CAIXA SUBTAB -->
+                    <div id="fin-content-fluxo" class="fin-tab-content space-y-6 hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                                <p class="text-xs font-bold text-zinc-400 uppercase">Total Entradas</p>
+                                <h3 id="fc-entradas" class="text-2xl font-black text-emerald-500 mt-1">R$ 0,00</h3>
+                            </div>
+                            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                                <p class="text-xs font-bold text-zinc-400 uppercase">Total Saídas</p>
+                                <h3 id="fc-saidas" class="text-2xl font-black text-rose-500 mt-1">R$ 0,00</h3>
+                            </div>
+                            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                                <p class="text-xs font-bold text-zinc-400 uppercase">Saldo de Caixa Líquido</p>
+                                <h3 id="fc-saldo-total" class="text-2xl font-black text-amber-500 mt-1">R$ 0,00</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <h3 class="text-sm font-extrabold text-zinc-800 dark:text-white mb-4">Fluxo Diário de Entradas e Saídas</h3>
+                            <div class="h-72 relative">
+                                <canvas id="chart-fluxo-caixa-full"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DRE SUBTAB -->
+                    <div id="fin-content-dre" class="fin-tab-content space-y-6 hidden">
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm max-w-2xl mx-auto space-y-4">
+                            <h3 class="text-base font-black text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-3 flex items-center justify-between">
+                                <span>Demonstração do Resultado do Exercício (DRE)</span>
+                                <span class="text-xs font-normal text-zinc-400">Consolidado Geral</span>
+                            </h3>
+
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800 font-bold text-zinc-200">
+                                    <span>(+) Receita Operacional Bruta</span>
+                                    <span id="dre-receita-bruta" class="text-emerald-500">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800 text-zinc-400">
+                                    <span>(-) Despesas Variáveis / Custos Diretos</span>
+                                    <span id="dre-despesas-variaveis" class="text-rose-500">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-zinc-200 dark:border-zinc-800 font-extrabold bg-zinc-800/40 px-3 rounded-lg text-white">
+                                    <span>(=) Lucro Bruto</span>
+                                    <span id="dre-lucro-bruto" class="text-amber-500">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-1 text-[11px] text-zinc-400 px-3">
+                                    <span>Margem Bruta %</span>
+                                    <span id="dre-margem-bruta" class="font-bold">0%</span>
+                                </div>
+
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800 text-zinc-400 mt-2">
+                                    <span>(-) Despesas Fixas Operacionais</span>
+                                    <span id="dre-despesas-fixas" class="text-rose-500">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between py-3 border-t-2 border-zinc-700 font-black text-sm bg-amber-500/10 border border-amber-500/30 px-3 rounded-lg text-white">
+                                    <span>(=) LUCRO LÍQUIDO DO PERÍODO</span>
+                                    <span id="dre-lucro-liquido" class="text-emerald-400">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-zinc-400 px-3 font-semibold">
+                                    <span>Margem Líquida Efetiva</span>
+                                    <span id="dre-margem-liquida" class="text-amber-500">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. SERVIÇOS VIEW -->
+                <section id="view-servicos" class="view-section space-y-6 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-black text-zinc-800 dark:text-white uppercase tracking-wide">Catálogo de Serviços & Precificação</h3>
+                            <p class="text-xs text-zinc-400">Gerencie preços, custos operacionais e margem bruta de cada serviço.</p>
+                        </div>
+                        <button onclick="if(window.ServicosModule) ServicosModule.openModal()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black text-xs transition shadow-md shadow-amber-500/20">
+                            + Novo Serviço
+                        </button>
+                    </div>
+
+                    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-black text-zinc-400 uppercase">
+                                        <th class="py-3.5 px-4">Nome do Serviço</th>
+                                        <th class="py-3.5 px-4">Categoria</th>
+                                        <th class="py-3.5 px-4">Tempo Média</th>
+                                        <th class="py-3.5 px-4">Responsável</th>
+                                        <th class="py-3.5 px-4 text-right">Custo Total</th>
+                                        <th class="py-3.5 px-4 text-right">Valor Cobrado</th>
+                                        <th class="py-3.5 px-4 text-right">Lucro Bruto</th>
+                                        <th class="py-3.5 px-4 text-right">Margem %</th>
+                                        <th class="py-3.5 px-4 text-right">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-servicos"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. ESTOQUE VIEW -->
+                <section id="view-estoque" class="view-section space-y-6 hidden">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-black text-zinc-800 dark:text-white uppercase tracking-wide">Estoque & Insumos</h3>
+                            <p class="text-xs text-zinc-400">Monitore níveis de insumos, consumo diário e alertas de reposição.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="text-right">
+                                <p class="text-[10px] text-zinc-400 font-bold uppercase">Valor em Estoque</p>
+                                <p id="est-valor-total-geral" class="text-sm font-black text-emerald-500">R$ 0,00</p>
+                            </div>
+                            <button onclick="if(window.EstoqueModule) EstoqueModule.openModal()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black text-xs transition shadow-md shadow-amber-500/20">
+                                + Cadastrar Produto
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="est-qtd-alertas" class="text-xs font-bold"></div>
+
+                    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-black text-zinc-400 uppercase">
+                                        <th class="py-3.5 px-4">Produto</th>
+                                        <th class="py-3.5 px-4">Categoria</th>
+                                        <th class="py-3.5 px-4">Qtd Atual</th>
+                                        <th class="py-3.5 px-4 text-right">Valor Unit</th>
+                                        <th class="py-3.5 px-4 text-right">Valor Total</th>
+                                        <th class="py-3.5 px-4">Autonomia</th>
+                                        <th class="py-3.5 px-4">Status</th>
+                                        <th class="py-3.5 px-4">Fornecedor</th>
+                                        <th class="py-3.5 px-4 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-estoque"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. FUNCIONÁRIOS VIEW -->
+                <section id="view-funcionarios" class="view-section space-y-6 hidden">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-black text-zinc-800 dark:text-white uppercase tracking-wide">Equipe & Produtividade</h3>
+                            <p class="text-xs text-zinc-400">Controle salários, atendimentos efetuados e comissões sobre vendas.</p>
+                        </div>
+                        <button onclick="if(window.FuncionariosModule) FuncionariosModule.openModal()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black text-xs transition shadow-md shadow-amber-500/20">
+                            + Novo Funcionário
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                            <span class="text-xs text-zinc-400 font-bold uppercase">Folha Salarial Base</span>
+                            <h4 id="func-folha-total" class="text-xl font-black text-white mt-0.5">R$ 0,00</h4>
+                        </div>
+                        <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                            <span class="text-xs text-zinc-400 font-bold uppercase">Total Comissões Devidas</span>
+                            <h4 id="func-comissoes-total" class="text-xl font-black text-amber-500 mt-0.5">R$ 0,00</h4>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-black text-zinc-400 uppercase">
+                                        <th class="py-3.5 px-4">Nome</th>
+                                        <th class="py-3.5 px-4">Cargo</th>
+                                        <th class="py-3.5 px-4">Admissão</th>
+                                        <th class="py-3.5 px-4 text-right">Salário Base</th>
+                                        <th class="py-3.5 px-4 text-center">Atendimentos</th>
+                                        <th class="py-3.5 px-4 text-right">Receita Gerada</th>
+                                        <th class="py-3.5 px-4 text-right">Comissão Devida</th>
+                                        <th class="py-3.5 px-4 text-right">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-funcionarios"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. SIMULADORES VIEW -->
+                <section id="view-simuladores" class="view-section space-y-6 hidden">
+                    <!-- Simulator Subtabs -->
+                    <div class="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-3 overflow-x-auto">
+                        <button data-sim="preco" class="sim-tab-btn px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-zinc-950 shadow-sm transition whitespace-nowrap">
+                            Preço de Serviço
+                        </button>
+                        <button data-sim="financeiro" class="sim-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-800 transition whitespace-nowrap">
+                            Cenários Financeiros
+                        </button>
+                        <button data-sim="expansao" class="sim-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-800 transition whitespace-nowrap">
+                            Expansão & Payback
+                        </button>
+                        <button data-sim="consumo" class="sim-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-800 transition whitespace-nowrap">
+                            Consumo Água & Energia
+                        </button>
+                        <button data-sim="metas" class="sim-tab-btn px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-800 transition whitespace-nowrap">
+                            Atingimento de Metas
+                        </button>
+                    </div>
+
+                    <!-- SIM 1: PREÇO DE SERVIÇO -->
+                    <div id="sim-box-preco" class="sim-content-box grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Parâmetros do Serviço</h4>
+                            <div class="grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <label class="block font-semibold mb-1">Custo Materiais (R$)</label>
+                                    <input type="number" id="sim-preco-mat" value="12" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorPreco()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Tempo Gasto (minutos)</label>
+                                    <input type="number" id="sim-preco-tempo" value="45" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorPreco()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Custo Hora Func. (R$/h)</label>
+                                    <input type="number" id="sim-preco-func-hora" value="20" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorPreco()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Luz + Água (R$/minuto)</label>
+                                    <input type="number" step="0.05" id="sim-preco-util-min" value="0.25" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorPreco()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Aluguel Proporcional (R$)</label>
+                                    <input type="number" id="sim-preco-aluguel" value="5" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorPreco()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Impostos (%)</label>
+                                    <input type="number" id="sim-preco-imposto" value="6" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorPreco()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-xs mb-1">Margem de Lucro Desejada (%)</label>
+                                <input type="number" id="sim-preco-margem" value="40" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorPreco()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs">
+                            </div>
+                        </div>
+
+                        <!-- Results -->
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Resultado da Precificação</h4>
+                            <div class="space-y-4 my-auto">
+                                <div class="flex justify-between items-center text-xs border-b border-zinc-100 dark:border-zinc-800 pb-2">
+                                    <span>Custo Total Direto:</span>
+                                    <strong id="sim-res-custo-total" class="text-zinc-100 font-bold">R$ 0,00</strong>
+                                </div>
+                                <div class="flex justify-between items-center text-xs border-b border-zinc-100 dark:border-zinc-800 pb-2">
+                                    <span>Preço Mínimo (Zero Lucro):</span>
+                                    <strong id="sim-res-preco-min" class="text-amber-500 font-bold">R$ 0,00</strong>
+                                </div>
+                                <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex justify-between items-center">
+                                    <div>
+                                        <p class="text-[10px] font-bold uppercase text-amber-500">Preço Recomendado</p>
+                                        <h3 id="sim-res-preco-rec" class="text-2xl font-black text-amber-400">R$ 0,00</h3>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[10px] font-bold text-zinc-400">Lucro Estimado</p>
+                                        <p id="sim-res-lucro-estimado" class="text-sm font-bold text-emerald-400">R$ 0,00</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span>Margem Efetiva Líquida:</span>
+                                    <strong id="sim-res-margem-efetiva" class="text-purple-400 font-bold">0%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIM 2: CENÁRIOS FINANCEIROS -->
+                    <div id="sim-box-financeiro" class="sim-content-box grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Simulação de Escala Mensal</h4>
+                            <div class="space-y-3 text-xs">
+                                <div>
+                                    <label class="block font-semibold mb-1">Preço Médio por Lavagem (R$)</label>
+                                    <input type="number" id="sim-fin-preco-medio" value="75" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorFinanceiro()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Clientes por Dia</label>
+                                    <input type="number" id="sim-fin-clientes-dia" value="18" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorFinanceiro()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Dias Trabalhados no Mês</label>
+                                    <input type="number" id="sim-fin-dias-mes" value="26" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorFinanceiro()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Custos Fixos Mensais (Aluguel, Luz, etc) (R$)</label>
+                                    <input type="number" id="sim-fin-custos-fixos" value="12000" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorFinanceiro()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Custo Variável Insumos por Veículo (R$)</label>
+                                    <input type="number" id="sim-fin-custo-var-carro" value="12" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorFinanceiro()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results -->
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Projeção do Resultado Mensal</h4>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Atendimentos Totais:</span>
+                                    <strong id="sim-fin-res-atendimentos" class="text-zinc-100">0 veículos</strong>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Receita Bruta Projetada:</span>
+                                    <strong id="sim-fin-res-receita" class="text-emerald-500 font-bold">R$ 0,00</strong>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Lucro Bruto (Apos Materiais):</span>
+                                    <strong id="sim-fin-res-lucro-bruto" class="text-amber-500 font-bold">R$ 0,00</strong>
+                                </div>
+                                <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                                    <p class="text-[10px] font-bold uppercase text-emerald-400">Lucro Líquido Final Estimado</p>
+                                    <h3 id="sim-fin-res-lucro-liquido" class="text-2xl font-black text-emerald-400">R$ 0,00</h3>
+                                    <p class="text-[11px] text-zinc-400 mt-1">Margem Líquida Projeta: <strong id="sim-fin-res-margem" class="text-purple-400">0%</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIM 3: EXPANSÃO & PAYBACK -->
+                    <div id="sim-box-expansao" class="sim-content-box grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Simular Novo Equipamento ou Unidade</h4>
+                            <div class="space-y-3 text-xs">
+                                <div>
+                                    <label class="block font-semibold mb-1">Investimento Inicial (R$)</label>
+                                    <input type="number" id="sim-exp-investimento" value="25000" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorExpansao()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Receita Adicional Estimada/Mês (R$)</label>
+                                    <input type="number" id="sim-exp-receita-add" value="8000" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorExpansao()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Custos Operacionais Adicionais/Mês (R$)</label>
+                                    <input type="number" id="sim-exp-custo-add" value="3500" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorExpansao()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results -->
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Análise do Retorno (Payback)</h4>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Investimento Total:</span>
+                                    <strong id="sim-exp-res-investimento" class="text-zinc-100">R$ 0,00</strong>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Lucro Adicional Líquido/Mês:</span>
+                                    <strong id="sim-exp-res-lucro-add" class="text-emerald-500 font-bold">R$ 0,00</strong>
+                                </div>
+                                <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                                    <p class="text-[10px] font-bold uppercase text-amber-500">Tempo de Retorno (Payback)</p>
+                                    <h3 id="sim-exp-res-payback" class="text-2xl font-black text-amber-400">0 meses</h3>
+                                    <p class="text-[11px] text-zinc-400 mt-1">ROI em 12 Meses: <strong id="sim-exp-res-roi-12m" class="text-emerald-400">0%</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIM 4: CONSUMO ÁGUA E ENERGIA -->
+                    <div id="sim-box-consumo" class="sim-content-box grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Consumo de Insumos</h4>
+                            <div class="space-y-3 text-xs">
+                                <h5 class="font-bold text-amber-500">Água</h5>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block font-semibold mb-1">Litros por Veículo</label>
+                                        <input type="number" id="sim-con-litros-veiculo" value="80" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorConsumo()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                    </div>
+                                    <div>
+                                        <label class="block font-semibold mb-1">Veículos/Mês</label>
+                                        <input type="number" id="sim-con-veiculos-mes" value="450" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorConsumo()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                    </div>
+                                </div>
+
+                                <h5 class="font-bold text-amber-500 pt-2">Energia Elétrica (Equipamentos)</h5>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block mb-1">Aspirador (kW)</label>
+                                        <input type="number" id="sim-con-pot-aspirador" value="2.5" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorConsumo()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1">Uso Aspirador (hrs/dia)</label>
+                                        <input type="number" id="sim-con-hor-aspirador" value="4" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorConsumo()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1">Lavadora Pressão (kW)</label>
+                                        <input type="number" id="sim-con-pot-lavadora" value="3.8" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorConsumo()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1">Uso Lavadora (hrs/dia)</label>
+                                        <input type="number" id="sim-con-hor-lavadora" value="5" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorConsumo()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results -->
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Estimativa de Custos de Utilidades</h4>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Consumo Mensal de Água:</span>
+                                    <strong id="sim-con-res-m3-agua" class="text-zinc-100">0 m³</strong>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Custo Estimado da Conta de Água:</span>
+                                    <strong id="sim-con-res-custo-agua" class="text-amber-500 font-bold">R$ 0,00</strong>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Consumo Elétrico Mensal:</span>
+                                    <strong id="sim-con-res-kwh-luz" class="text-zinc-100">0 kWh</strong>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Custo Estimado da Conta de Luz:</span>
+                                    <strong id="sim-con-res-custo-luz" class="text-amber-500 font-bold">R$ 0,00</strong>
+                                </div>
+                                <div class="p-4 rounded-xl bg-zinc-800/50 border border-zinc-700">
+                                    <p class="text-[10px] font-bold uppercase text-zinc-400">Total Mensal Insumos Básico</p>
+                                    <h3 id="sim-con-res-custo-total-util" class="text-2xl font-black text-white">R$ 0,00</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIM 5: METAS -->
+                    <div id="sim-box-metas" class="sim-content-box grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Calculadora de Ritmo de Vendas</h4>
+                            <div class="space-y-3 text-xs">
+                                <div>
+                                    <label class="block font-semibold mb-1">Meta de Faturamento Mensal (R$)</label>
+                                    <input type="number" id="sim-met-target" value="35000" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorMetas()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Dias Trabalhados Restantes no Mês</label>
+                                    <input type="number" id="sim-met-dias-restantes" value="12" oninput="if(window.SimuladoresModule) SimuladoresModule.calcularSimuladorMetas()" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results -->
+                        <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-zinc-800 dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">Meta Diária Necessária</h4>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Receita Acumulada no Mês:</span>
+                                    <strong id="sim-met-res-atual" class="text-emerald-500 font-bold">R$ 0,00</strong>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800">
+                                    <span>Valor Faltante para Meta:</span>
+                                    <strong id="sim-met-res-faltante" class="text-rose-500 font-bold">R$ 0,00</strong>
+                                </div>
+                                <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                                    <p class="text-[10px] font-bold uppercase text-amber-500">Meta Necessária por Dia</p>
+                                    <h3 id="sim-met-res-rec-diaria" class="text-2xl font-black text-amber-400">R$ 0,00/dia</h3>
+                                    <p class="text-[11px] text-zinc-400 mt-1">Equivale a aprox: <strong id="sim-met-res-clientes-dia" class="text-emerald-400">0 clientes/dia</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. RELATÓRIOS VIEW -->
+                <section id="view-relatorios" class="view-section space-y-6 hidden">
+                    <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-6 max-w-3xl mx-auto">
+                        <div class="border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                            <h3 class="text-base font-black text-zinc-800 dark:text-white">Gerador de Relatórios Executivos</h3>
+                            <p class="text-xs text-zinc-400">Selecione o módulo para compilar os dados e exportar em PDF, Excel ou backup JSON.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div>
+                                <label class="block font-semibold mb-1">Tipo de Relatório</label>
+                                <select id="rel-tipo" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 font-medium">
+                                    <option value="financeiro">Financeiro - Receitas e Vendas</option>
+                                    <option value="despesas">Financeiro - Despesas e Custos</option>
+                                    <option value="estoque">Estoque e Posição de Insumos</option>
+                                    <option value="funcionarios">Funcionários, Desempenho e Comissões</option>
+                                    <option value="servicos">Catálogo e Margens de Serviços</option>
+                                    <option value="kpis">Relatório Consolidado de KPIs e Indicadores</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold mb-1">Formato de Saída</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button id="btn-export-pdf" class="p-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold flex items-center justify-center gap-1.5 transition">
+                                        <i class="fa-solid fa-file-pdf"></i> PDF
+                                    </button>
+                                    <button id="btn-export-excel" class="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-1.5 transition">
+                                        <i class="fa-solid fa-file-excel"></i> Excel
+                                    </button>
+                                    <button id="btn-export-json" class="p-2.5 rounded-xl bg-zinc-700 hover:bg-zinc-800 text-white font-bold flex items-center justify-center gap-1.5 transition">
+                                        <i class="fa-solid fa-file-code"></i> JSON
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. CONFIGURAÇÕES VIEW -->
+                <section id="view-configuracoes" class="view-section space-y-6 hidden">
+                    <div class="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm max-w-2xl mx-auto space-y-6">
+                        <div class="border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                            <h3 class="text-base font-black text-zinc-800 dark:text-white">Configurações da Empresa & Tarifas</h3>
+                            <p class="text-xs text-zinc-400">Ajuste os dados do lava-jato, metas e valores de tarifas públicas para cálculo de custo.</p>
+                        </div>
+
+                        <form id="form-configuracoes" class="space-y-4 text-xs">
+                            <div>
+                                <label class="block font-semibold mb-1">Nome da Empresa / Lava-Jato</label>
+                                <input type="text" id="cfg-nome-empresa" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-semibold mb-1">CNPJ</label>
+                                    <input type="text" id="cfg-cnpj" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Telefone / WhatsApp</label>
+                                    <input type="text" id="cfg-telefone" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block font-semibold mb-1">Endereço Completo</label>
+                                <input type="text" id="cfg-endereco" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block font-semibold mb-1">Meta Mensal (R$)</label>
+                                    <input type="number" id="cfg-meta-mensal" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Tarifa Água (R$/m³)</label>
+                                    <input type="number" step="0.10" id="cfg-valor-agua" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1">Tarifa Luz (R$/kWh)</label>
+                                    <input type="number" step="0.05" id="cfg-valor-kwh" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black transition">
+                                Salvar Configurações
+                            </button>
+                        </form>
+
+                        <div class="border-t border-zinc-200 dark:border-zinc-800 pt-4 space-y-3">
+                            <h4 class="text-xs font-bold text-zinc-800 dark:text-white">Manutenção do Banco de Dados Local (IndexedDB)</h4>
+                            <button onclick="if(window.App) App.resetToSeedData()" class="w-full py-2.5 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 text-xs font-bold transition border border-amber-500/30">
+                                <i class="fa-solid fa-arrows-rotate mr-1.5"></i> Restaurar Dados Demonstrativos Iniciais
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ================= MODAIS ================= -->
+
+    <!-- MODAL RECEITA -->
+    <div id="modal-receita" class="modal-backdrop fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white dark:bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                <h3 class="text-sm font-bold text-zinc-800 dark:text-white">Lançar Nova Receita de Serviço</h3>
+                <button class="btn-close-modal text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="if(window.FinanceiroModule) FinanceiroModule.saveReceita(event)" class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Data</label>
+                        <input type="date" id="rec-data" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Forma de Pagamento</label>
+                        <select id="rec-forma" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 font-medium">
+                            <option value="Pix">Pix</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                            <option value="Cartão de Débito">Cartão de Débito</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Cliente</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="rec-cliente" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"></select>
+                        <input type="text" id="rec-cliente-custom" placeholder="Ou digite o nome..." class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Serviço Realizado</label>
+                    <select id="rec-servico" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Funcionário Executor</label>
+                        <select id="rec-funcionario" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"></select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Valor Cobrado (R$)</label>
+                        <input type="number" step="0.01" id="rec-valor" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 font-bold text-emerald-400">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Observações</label>
+                    <input type="text" id="rec-obs" placeholder="Placa do carro, detalhes..." class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition mt-2">
+                    Confirmar Receita
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DESPESA -->
+    <div id="modal-despesa" class="modal-backdrop fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white dark:bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                <h3 class="text-sm font-bold text-zinc-800 dark:text-white">Lançar Nova Despesa</h3>
+                <button class="btn-close-modal text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="if(window.FinanceiroModule) FinanceiroModule.saveDespesa(event)" class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Data</label>
+                        <input type="date" id="desp-data" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Tipo de Despesa</label>
+                        <select id="desp-tipo" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 font-medium">
+                            <option value="fixa">Fixa</option>
+                            <option value="variavel">Variável</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Categoria</label>
+                        <select id="desp-categoria" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                            <option value="Aluguel">Aluguel</option>
+                            <option value="Energia">Energia</option>
+                            <option value="Água">Água</option>
+                            <option value="Internet">Internet</option>
+                            <option value="Contador">Contador</option>
+                            <option value="Salários">Salários / Folha</option>
+                            <option value="Shampoo">Shampoo / Insumos</option>
+                            <option value="Manutenção">Manutenção Equipamentos</option>
+                            <option value="Marketing">Marketing / Anúncios</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Valor (R$)</label>
+                        <input type="number" step="0.01" id="desp-valor" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 font-bold text-rose-400">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Descrição / Item</label>
+                    <input type="text" id="desp-item" required placeholder="Ex: Conta de Luz referente a Julho..." class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Observações</label>
+                    <input type="text" id="desp-obs" placeholder="Nº da nota, boleto..." class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition mt-2">
+                    Salvar Despesa
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL SERVIÇO -->
+    <div id="modal-servico" class="modal-backdrop fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white dark:bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                <h3 id="serv-modal-title" class="text-sm font-bold text-zinc-800 dark:text-white">Cadastrar Serviço</h3>
+                <button class="btn-close-modal text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="if(window.ServicosModule) ServicosModule.save(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold mb-1">Nome do Serviço</label>
+                    <input type="text" id="serv-nome" required placeholder="Ex: Lavagem Completa com Cera..." class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Categoria</label>
+                        <select id="serv-categoria" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                            <option value="Lavagem">Lavagem</option>
+                            <option value="Lavagem Especial">Lavagem Especial</option>
+                            <option value="Estética">Estética Automotiva</option>
+                            <option value="Estética Premium">Estética Premium</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Tempo Médio (minutos)</label>
+                        <input type="number" id="serv-tempo" value="35" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Funcionário Padrão Responsável</label>
+                    <select id="serv-func" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"></select>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Custo Op (R$)</label>
+                        <input type="number" step="0.01" id="serv-custo-op" value="15" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Custo Insumos (R$)</label>
+                        <input type="number" step="0.01" id="serv-custo-mat" value="5" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Preço Cobrado (R$)</label>
+                        <input type="number" step="0.01" id="serv-valor" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 font-bold text-amber-500">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black transition mt-2">
+                    Salvar Serviço
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ESTOQUE -->
+    <div id="modal-estoque" class="modal-backdrop fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white dark:bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                <h3 id="est-modal-title" class="text-sm font-bold text-zinc-800 dark:text-white">Cadastrar Item no Estoque</h3>
+                <button class="btn-close-modal text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="if(window.EstoqueModule) EstoqueModule.save(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold mb-1">Nome do Produto</label>
+                    <input type="text" id="est-nome" required placeholder="Ex: Shampoo Neutro Concentrado 5L..." class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Categoria</label>
+                        <select id="est-categoria" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                            <option value="Químicos">Químicos</option>
+                            <option value="Proteção">Proteção / Ceras</option>
+                            <option value="Acabamento">Acabamento / Pretinho</option>
+                            <option value="Acessórios">Acessórios / Panos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Unidade</label>
+                        <select id="est-unidade" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                            <option value="Galao">Galão (5L)</option>
+                            <option value="Frasco">Frasco (1L)</option>
+                            <option value="Unidade">Unidade</option>
+                            <option value="Jogo">Jogo / Kit</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Qtd Inicial</label>
+                        <input type="number" id="est-quantidade" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Valor Unit (R$)</label>
+                        <input type="number" step="0.01" id="est-valor-unit" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Qtd Mínima</label>
+                        <input type="number" id="est-qtd-min" value="2" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Fornecedor</label>
+                        <input type="text" id="est-fornecedor" placeholder="Ex: Vonixx..." class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Data da Compra</label>
+                        <input type="date" id="est-data-compra" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black transition mt-2">
+                    Salvar Produto
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL MOVIMENTAÇÃO DE ESTOQUE -->
+    <div id="modal-movimentacao" class="modal-backdrop fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white dark:bg-zinc-900 w-full max-w-md rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                <h3 class="text-sm font-bold text-zinc-800 dark:text-white">Movimentar Estoque</h3>
+                <button class="btn-close-modal text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="if(window.EstoqueModule) EstoqueModule.saveMovimentacao(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="mov-item-id">
+                <p id="mov-item-nome" class="font-bold text-zinc-200 text-xs bg-zinc-800/50 p-2.5 rounded-xl"></p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Tipo Movimentação</label>
+                        <select id="mov-tipo" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 font-medium">
+                            <option value="entrada">Entrada (+)</option>
+                            <option value="saida">Saída (-)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Quantidade</label>
+                        <input type="number" id="mov-qtd" value="1" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 font-bold">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Motivo / Observação</label>
+                    <input type="text" id="mov-motivo" placeholder="Ex: Consumo na lavagem do dia..." class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition mt-2">
+                    Registrar Movimentação
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL FUNCIONÁRIO -->
+    <div id="modal-funcionario" class="modal-backdrop fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white dark:bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                <h3 id="func-modal-title" class="text-sm font-bold text-zinc-800 dark:text-white">Cadastrar Funcionário</h3>
+                <button class="btn-close-modal text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="if(window.FuncionariosModule) FuncionariosModule.save(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold mb-1">Nome Completo</label>
+                    <input type="text" id="func-nome" required placeholder="Nome do funcionário..." class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Cargo</label>
+                        <input type="text" id="func-cargo" value="Lavador" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Data de Admissão</label>
+                        <input type="date" id="func-admissao" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold mb-1">Salário Base (R$)</label>
+                        <input type="number" step="0.01" id="func-salario" required class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Comissão sobre Vendas (%)</label>
+                        <input type="number" step="0.5" id="func-comissao" value="8" class="w-full p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 font-bold text-amber-500">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black transition mt-2">
+                    Salvar Funcionário
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Modules -->
+    <script src="js/utils.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/financeiro.js"></script>
+    <script src="js/servicos.js"></script>
+    <script src="js/estoque.js"></script>
+    <script src="js/funcionarios.js"></script>
+    <script src="js/simuladores.js"></script>
+    <script src="js/relatorios.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
