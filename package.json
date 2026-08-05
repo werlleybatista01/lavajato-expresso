@@ -1,0 +1,13 @@
+{
+  "name": "lavajato-expresso-erp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ERP offline para gestão financeira e operacional do Lava Jato Expresso.",
+  "scripts": {
+    "check": "node scripts/verify.mjs",
+    "serve": "npx serve ."
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

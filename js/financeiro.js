@@ -16,12 +16,12 @@ const FinanceiroModule = {
         tabBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 tabBtns.forEach(b => {
-                    b.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
-                    b.classList.add('text-slate-600', 'dark:text-slate-400', 'hover:bg-slate-100', 'dark:hover:bg-slate-800');
+                    b.classList.remove('bg-amber-500', 'text-zinc-950', 'shadow-sm');
+                    b.classList.add('text-zinc-400', 'hover:bg-zinc-800');
                 });
                 const target = e.currentTarget;
-                target.classList.remove('text-slate-600', 'dark:text-slate-400', 'hover:bg-slate-100', 'dark:hover:bg-slate-800');
-                target.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+                target.classList.remove('text-zinc-400', 'hover:bg-zinc-800');
+                target.classList.add('bg-amber-500', 'text-zinc-950', 'shadow-sm');
 
                 this.activeTab = target.dataset.tab;
                 this.switchTab(this.activeTab);

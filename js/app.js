@@ -36,7 +36,10 @@ const App = {
             console.log('Car Wash ERP fully loaded and offline ready!');
         } catch (error) {
             console.error('Failed to initialize application:', error);
-            if (window.Utils) Utils.showToast('Erro ao carregar banco de dados local.', 'error');
+            if (window.Utils) {
+                Utils.showToast('Erro ao iniciar o sistema. Recarregue a página.', 'error');
+            }
+            document.body.dataset.appState = 'error';
         }
     },
 
@@ -73,7 +76,10 @@ const App = {
         if (btnToggleSidebar) {
             btnToggleSidebar.addEventListener('click', () => {
                 const sidebar = document.getElementById('sidebar');
-                if (sidebar) sidebar.classList.toggle('collapsed');
+                if (sidebar) {
+                    sidebar.classList.toggle('collapsed');
+                    btnToggleSidebar.setAttribute('aria-expanded', String(!sidebar.classList.contains('collapsed')));
+                }
             });
         }
 
