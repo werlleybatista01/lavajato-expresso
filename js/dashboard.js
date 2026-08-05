@@ -14,6 +14,13 @@ const DashboardModule = {
         const funcionarios = await dbService.getAll('funcionarios');
         const servicos = await dbService.getAll('servicos');
         const config = (await dbService.getById('configuracoes', 'main')) || {};
+        const registrosReceita = receitas.filter(BusinessRules.isActive);
+        const registrosDespesa = despesas.filter(BusinessRules.isActive);
+        const { monthStart, monthEnd } = BusinessRules.getRanges();
+        const despesasMes = registrosDespesa.filter((item) => {
+            const date = BusinessRules.parseISODate(item.data);
+            return date && date >= monthStart && date < monthEnd;
+        });
 
         const kpis = Utils.calculateKPIs(receitas, despesas, estoque, funcionarios, servicos);
         const metaMensal = config.metaMensal || 35000;
@@ -22,15 +29,15 @@ const DashboardModule = {
         this.updateKPICards(kpis, metaMensal);
 
         // Render Dashboard Charts
-        chartManager.renderReceitaDiariaChart('chart-receita-diaria', receitas);
-        chartManager.renderReceitaMensalChart('chart-receita-mensal', receitas, metaMensal);
-        chartManager.renderDespesasPieChart('chart-despesas-categoria', despesas);
-        chartManager.renderFluxoCaixaChart('chart-fluxo-caixa-dash', receitas, despesas);
-        chartManager.renderServicosPopularesChart('chart-servicos-populares', receitas);
-        chartManager.renderFuncionariosChart('chart-funcionarios-dash', receitas);
+        chartManager.renderReceitaDiariaChart('chart-receita-diaria', registrosReceita);
+        chartManager.renderReceitaMensalChart('chart-receita-mensal', registrosReceita, metaMensal);
+        chartManager.renderDespesasPieChart('chart-despesas-categoria', despesasMes);
+        chartManager.renderFluxoCaixaChart('chart-fluxo-caixa-dash', registrosReceita, registrosDespesa);
+        chartManager.renderServicosPopularesChart('chart-servicos-populares', registrosReceita);
+        chartManager.renderFuncionariosChart('chart-funcionarios-dash', registrosReceita);
 
         // Render Recent Activity Table
-        this.renderTabelaRecentes(receitas);
+        this.renderTabelaRecentes(registrosReceita);
 
         // Render Alerts (Estoque baixo e Contas)
         this.renderAlertas(estoque, despesas);
@@ -53,7 +60,7 @@ const DashboardModule = {
         setText('kpi-qtd-clientes', kpis.qtdClientes);
         setText('kpi-qtd-veiculos', kpis.qtdVeiculos);
         setText('kpi-margem-lucro', Utils.formatPercent(kpis.margemLiquida));
-        setText('kpi-ponto-equilibrio', Utils.formatCurrency(kpis.pontoEquilibrio));
+        setText('kpi-ponto-equilibrio', kpis.pontoEquilibrio == null ? 'Não calculável' : Utils.formatCurrency(kpis.pontoEquilibrio));
         setText('kpi-valor-estoque', Utils.formatCurrency(kpis.valorEstoque));
         setText('kpi-func-ativos', kpis.funcAtivos);
         setText('kpi-rec-func', Utils.formatCurrency(kpis.recPorFuncionario));
@@ -61,7 +68,7 @@ const DashboardModule = {
         setText('kpi-despesas-variaveis', Utils.formatCurrency(kpis.despesasVariaveis));
 
         // Meta Mensal Progress
-        const percentMeta = Math.min(100, Math.round((kpis.recMes / metaMensal) * 100));
+        const percentMeta = metaMensal > 0 ? Math.min(100, Math.max(0, Math.round((kpis.recMes / metaMensal) * 100))) : 0;
         setText('kpi-meta-val', `${Utils.formatCurrency(kpis.recMes)} / ${Utils.formatCurrency(metaMensal)}`);
         setText('kpi-meta-percent', `${percentMeta}% Atingido`);
 
@@ -77,7 +84,7 @@ const DashboardModule = {
         if (!tbody) return;
 
         // Sort descending by date
-        const ultimas = [...receitas].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 6);
+        const ultimas = [...receitas].sort((a, b) => String(b.data).localeCompare(String(a.data))).slice(0, 6);
 
         if (ultimas.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">Nenhum atendimento registrado.</td></tr>`;
@@ -87,11 +94,11 @@ const DashboardModule = {
         tbody.innerHTML = ultimas.map(r => `
             <tr class="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                 <td class="py-3 px-4 text-xs font-medium text-slate-700 dark:text-slate-300">${Utils.formatDate(r.data)}</td>
-                <td class="py-3 px-4 text-xs font-semibold text-slate-800 dark:text-slate-200">${r.cliente || 'Cliente Avulso'}</td>
-                <td class="py-3 px-4 text-xs text-slate-600 dark:text-slate-400">${r.servico || '-'}</td>
+                <td class="py-3 px-4 text-xs font-semibold text-slate-800 dark:text-slate-200">${Utils.escapeHTML(r.cliente || 'Cliente Avulso')}</td>
+                <td class="py-3 px-4 text-xs text-slate-600 dark:text-slate-400">${Utils.escapeHTML(r.servicoNome || r.servico || '-')}</td>
                 <td class="py-3 px-4 text-xs">
                     <span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                        ${r.formaPagamento || 'Pix'}
+                        ${Utils.escapeHTML(r.formaPagamento || 'Pix')}
                     </span>
                 </td>
                 <td class="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right">${Utils.formatCurrency(r.valor)}</td>
@@ -106,14 +113,14 @@ const DashboardModule = {
         const alertas = [];
 
         // Estoque baixo
-        estoque.forEach(item => {
+        estoque.filter(BusinessRules.isActive).forEach(item => {
             const qtd = parseFloat(item.quantidade) || 0;
             const min = parseFloat(item.quantidadeMinima) || 0;
             if (qtd <= min) {
                 alertas.push({
                     tipo: 'warning',
                     titulo: 'Estoque Baixo',
-                    mensagem: `O produto <b>${item.nome}</b> está com apenas ${qtd} ${item.unidade}(s) em estoque (Mínimo: ${min}).`
+                    mensagem: `O produto <b>${Utils.escapeHTML(item.nome)}</b> está com apenas ${qtd} ${Utils.escapeHTML(item.unidade)}(s) em estoque (Mínimo: ${min}).`
                 });
             }
         });

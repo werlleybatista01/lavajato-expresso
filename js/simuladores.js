@@ -54,19 +54,15 @@ const SimuladoresModule = {
         const taxaImpostoPct = parseFloat(document.getElementById('sim-preco-imposto')?.value) || 0;
         const margemDesejadaPct = parseFloat(document.getElementById('sim-preco-margem')?.value) || 0;
 
-        // Calculations
-        const custoMaoObra = (tempoMin / 60) * custoHoraFunc;
-        const custoUtilidades = tempoMin * custoLuzAguaMin;
-        const custoTotalDireto = custoMat + custoMaoObra + custoUtilidades + aluguelProp;
-
-        // Preço recomendado = Custo / (1 - (Impostos + Margem) / 100)
-        const taxaTotal = (taxaImpostoPct + margemDesejadaPct) / 100;
-        const divisor = taxaTotal < 1 ? (1 - taxaTotal) : 0.1;
-        const precoRecomendado = custoTotalDireto / divisor;
-
-        const precoMinimo = custoTotalDireto * (1 + (taxaImpostoPct / 100));
-        const valorLucro = precoRecomendado - (custoTotalDireto + (precoRecomendado * (taxaImpostoPct / 100)));
-        const margemEfetiva = precoRecomendado > 0 ? (valorLucro / precoRecomendado) * 100 : 0;
+        const result = BusinessRules.calculateServicePrice({
+            material: custoMat, minutes: tempoMin, laborHour: custoHoraFunc,
+            utilitiesMinute: custoLuzAguaMin, allocatedFixedCost: aluguelProp,
+            taxPercent: taxaImpostoPct, targetMarginPercent: margemDesejadaPct
+        });
+        if (!result.valid) {
+            Utils.showToast('Impostos e margem devem somar menos de 100%, sem valores negativos.', 'error');
+            return;
+        }
 
         // UI Update
         const setText = (id, text) => {
@@ -74,11 +70,11 @@ const SimuladoresModule = {
             if (el) el.innerText = text;
         };
 
-        setText('sim-res-custo-total', Utils.formatCurrency(custoTotalDireto));
-        setText('sim-res-preco-min', Utils.formatCurrency(precoMinimo));
-        setText('sim-res-preco-rec', Utils.formatCurrency(precoRecomendado));
-        setText('sim-res-lucro-estimado', Utils.formatCurrency(valorLucro));
-        setText('sim-res-margem-efetiva', Utils.formatPercent(margemEfetiva));
+        setText('sim-res-custo-total', Utils.formatCurrency(result.directCost));
+        setText('sim-res-preco-min', Utils.formatCurrency(result.minimumPrice));
+        setText('sim-res-preco-rec', Utils.formatCurrency(result.recommendedPrice));
+        setText('sim-res-lucro-estimado', Utils.formatCurrency(result.profit));
+        setText('sim-res-margem-efetiva', Utils.formatPercent(result.effectiveMargin));
     },
 
     // 2. SIMULADOR FINANCEIRO

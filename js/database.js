@@ -5,9 +5,10 @@
 class DatabaseService {
     constructor() {
         this.dbName = 'CarWashDB';
-        this.dbVersion = 1;
+        this.dbVersion = 2;
         this.db = null;
         this.initPromise = null;
+        this.enableDemoSeed = false;
         this.stores = [
             'receitas',
             'despesas',
@@ -45,6 +46,7 @@ class DatabaseService {
             request.onsuccess = async (event) => {
                 this.db = event.target.result;
                 await this.seedInitialDataIfEmpty();
+                await this.migrateLegacyData();
                 resolve(this.db);
             };
 
@@ -138,6 +140,20 @@ class DatabaseService {
         });
     }
 
+    async resetDatabase() {
+        if (this.db) {
+            this.db.close();
+            this.db = null;
+        }
+        this.initPromise = null;
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.deleteDatabase(this.dbName);
+            request.onsuccess = () => resolve(true);
+            request.onerror = () => reject(request.error);
+            request.onblocked = () => reject(new Error('Feche outras abas do sistema antes de apagar a base.'));
+        });
+    }
+
     // Export & Import full database
     async exportFullDatabase() {
         await this.ensureDb();
@@ -150,14 +166,111 @@ class DatabaseService {
 
     async importFullDatabase(data) {
         await this.ensureDb();
-        for (const storeName of this.stores) {
-            if (data[storeName] && Array.isArray(data[storeName])) {
-                await this.clearStore(storeName);
-                const tx = this.db.transaction(storeName, 'readwrite');
+        if (!data || typeof data !== 'object') throw new Error('Backup inválido.');
+        const selectedStores = this.stores.filter((name) => Array.isArray(data[name]));
+        if (!selectedStores.length) throw new Error('Backup sem tabelas reconhecidas.');
+
+        await new Promise((resolve, reject) => {
+            const tx = this.db.transaction(selectedStores, 'readwrite');
+            selectedStores.forEach((storeName) => {
                 const store = tx.objectStore(storeName);
-                data[storeName].forEach(item => store.put(item));
+                store.clear();
+                data[storeName].forEach((item) => store.put(item));
+            });
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error('Importação cancelada.'));
+        });
+        await this.migrateLegacyData(true);
+    }
+
+    async migrateLegacyData(force = false) {
+        const config = await this.getById('configuracoes', 'main');
+        if (!force && Number(config?.schemaVersion || 0) >= 2) return;
+
+        const funcionarios = await this.getAll('funcionarios');
+        const byName = new Map(funcionarios.map((employee) => [BusinessRules.normalizeText(employee.nome), employee]));
+        const servicos = await this.getAll('servicos');
+        const servicesByName = new Map(servicos.map((service) => [BusinessRules.normalizeText(service.nome), service]));
+        const storesWithActiveFlag = ['funcionarios', 'servicos', 'estoque', 'receitas', 'despesas'];
+
+        for (const storeName of storesWithActiveFlag) {
+            const records = await this.getAll(storeName);
+            for (const record of records) {
+                let changed = false;
+                if (record.ativo == null && record.status !== 'estornado') {
+                    record.ativo = true;
+                    changed = true;
+                }
+                if (storeName === 'receitas' && record.funcionarioId == null) {
+                    const employee = byName.get(BusinessRules.normalizeText(record.funcionario || record.funcionarioNome));
+                    if (employee) {
+                        record.funcionarioId = employee.id;
+                        record.funcionarioNome = employee.nome;
+                        record.comissaoPercentSnapshot = BusinessRules.toNumber(employee.comissaoPercent);
+                        changed = true;
+                    }
+                }
+                if (storeName === 'receitas' && record.servicoId == null) {
+                    const service = servicesByName.get(BusinessRules.normalizeText(record.servico || record.servicoNome));
+                    if (service) {
+                        record.servicoId = service.id;
+                        record.servicoNome = service.nome;
+                        record.custoServicoSnapshot = BusinessRules.toNumber(service.custoOperacional)
+                            + BusinessRules.toNumber(service.custoMateriais);
+                        changed = true;
+                    }
+                }
+                if (changed) await this.update(storeName, record);
             }
         }
+
+        await this.update('configuracoes', { ...(config || { id: 'main' }), schemaVersion: 2 });
+    }
+
+    async moveStock({ itemId, tipo, quantidade, motivo = '', data }) {
+        await this.ensureDb();
+        const amount = BusinessRules.toNumber(quantidade);
+        if (!Number.isInteger(Number(itemId)) || amount <= 0 || !['entrada', 'saida'].includes(tipo)) {
+            throw new Error('Movimentação de estoque inválida.');
+        }
+
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(['estoque', 'movimentacoes'], 'readwrite');
+            const stockStore = tx.objectStore('estoque');
+            const movementStore = tx.objectStore('movimentacoes');
+            const getRequest = stockStore.get(Number(itemId));
+            let newQuantity = null;
+
+            getRequest.onsuccess = () => {
+                const item = getRequest.result;
+                if (!item || item.ativo === false) {
+                    tx.abort();
+                    reject(new Error('Item de estoque não encontrado ou inativo.'));
+                    return;
+                }
+                const current = BusinessRules.toNumber(item.quantidade);
+                if (tipo === 'saida' && current < amount) {
+                    tx.abort();
+                    reject(new Error(`Estoque insuficiente: saldo atual ${current} ${item.unidade || 'un'}.`));
+                    return;
+                }
+                newQuantity = tipo === 'entrada' ? current + amount : current - amount;
+                item.quantidade = newQuantity;
+                item.atualizadoEm = new Date().toISOString();
+                stockStore.put(item);
+                movementStore.add({
+                    data: data || BusinessRules.toLocalISO(), tipo, quantidade: amount,
+                    produtoId: item.id, produtoNome: item.nome, motivo,
+                    saldoAnterior: current, saldoPosterior: newQuantity,
+                    criadoEm: new Date().toISOString()
+                });
+            };
+            getRequest.onerror = () => reject(getRequest.error);
+            tx.oncomplete = () => resolve(newQuantity);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => { if (newQuantity != null) reject(tx.error || new Error('Movimentação cancelada.')); };
+        });
     }
 
     // Seed realistic demo data if fresh DB
@@ -171,15 +284,18 @@ class DatabaseService {
         await this.update('configuracoes', {
             id: 'main',
             nomeEmpresa: 'Lava Jato Expresso',
-            cnpj: '12.345.678/0001-90',
-            telefone: '(27) 99887-6655',
-            endereco: 'Av. Principal, 1500 - Vitória/ES',
+            cnpj: '',
+            telefone: '',
+            endereco: '',
             logo: '',
             metaMensal: 35000,
             valorAguaM3: 8.50, // R$ por m³
             valorKwh: 0.85,    // R$ por kWh
             horarioFuncionamento: 'Segunda a Sábado, 08:00 às 18:00'
         });
+
+        // Produção inicia vazia. A massa abaixo existe apenas para testes/desenvolvimento explícito.
+        if (!this.enableDemoSeed) return;
 
         // 2. Funcionários
         const sampleFuncionarios = [
@@ -277,7 +393,7 @@ class DatabaseService {
         for (let i = 9; i >= 0; i--) {
             const dateObj = new Date(today);
             dateObj.setDate(today.getDate() - i);
-            const dateStr = dateObj.toISOString().split('T')[0];
+            const dateStr = BusinessRules.toLocalISO(dateObj);
 
             const salesCount = 3 + (i % 3);
             for (let s = 0; s < salesCount; s++) {
@@ -307,4 +423,5 @@ class DatabaseService {
 
 // Global Singleton
 const dbService = new DatabaseService();
-window.dbService = dbService;
+if (typeof window !== 'undefined') window.dbService = dbService;
+if (typeof module !== 'undefined' && module.exports) module.exports = DatabaseService;

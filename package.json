@@ -4,8 +4,13 @@
   "private": true,
   "description": "ERP offline para gestão financeira e operacional do Lava Jato Expresso.",
   "scripts": {
-    "check": "node scripts/verify.mjs",
+    "check": "node scripts/verify.mjs && node --test",
+    "test": "node --test",
     "serve": "npx serve ."
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.4",
+    "jsdom": "^26.1.0"
   },
   "engines": {
     "node": ">=20"

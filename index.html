@@ -183,7 +183,7 @@
 
                         <div class="card-erp bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Lucro Líquido</p>
+                                <p class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Lucro Líquido do Mês</p>
                                 <h3 id="kpi-lucro-liquido" class="text-2xl font-black text-zinc-900 dark:text-white mt-1">R$ 0,00</h3>
                                 <p class="text-[11px] text-emerald-500 font-bold mt-1">Margem: <span id="kpi-margem-lucro">0%</span></p>
                             </div>
@@ -194,7 +194,7 @@
 
                         <div class="card-erp bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Ticket Médio</p>
+                                <p class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Ticket Médio do Mês</p>
                                 <h3 id="kpi-ticket-medio" class="text-2xl font-black text-zinc-900 dark:text-white mt-1">R$ 0,00</h3>
                                 <p class="text-[11px] text-amber-500 font-bold mt-1"><span id="kpi-qtd-veiculos">0</span> veículos lavados</p>
                             </div>
@@ -230,11 +230,11 @@
                             <span id="kpi-valor-estoque" class="text-sm font-black text-zinc-800 dark:text-zinc-100">R$ 0,00</span>
                         </div>
                         <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Despesas Fixas</span>
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Despesas Fixas do Mês</span>
                             <span id="kpi-despesas-fixas" class="text-sm font-black text-rose-600 dark:text-rose-400">R$ 0,00</span>
                         </div>
                         <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Despesas Variáveis</span>
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Despesas Variáveis do Mês</span>
                             <span id="kpi-despesas-variaveis" class="text-sm font-black text-amber-600 dark:text-amber-400">R$ 0,00</span>
                         </div>
                         <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
@@ -242,7 +242,7 @@
                             <span id="kpi-func-ativos" class="text-sm font-black text-zinc-800 dark:text-zinc-100">0</span>
                         </div>
                         <div class="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Receita / Func.</span>
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Receita Mensal / Func.</span>
                             <span id="kpi-rec-func" class="text-sm font-black text-amber-500">R$ 0,00</span>
                         </div>
                     </div>
@@ -590,11 +590,11 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                            <span class="text-xs text-zinc-400 font-bold uppercase">Folha Salarial Base</span>
+                            <span class="text-xs text-zinc-400 font-bold uppercase">Folha Mensal da Equipe Ativa</span>
                             <h4 id="func-folha-total" class="text-xl font-black text-white mt-0.5">R$ 0,00</h4>
                         </div>
                         <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                            <span class="text-xs text-zinc-400 font-bold uppercase">Total Comissões Devidas</span>
+                            <span class="text-xs text-zinc-400 font-bold uppercase">Comissões Devidas no Mês</span>
                             <h4 id="func-comissoes-total" class="text-xl font-black text-amber-500 mt-0.5">R$ 0,00</h4>
                         </div>
                     </div>
@@ -1307,6 +1307,7 @@
     </div>
 
     <!-- Application JavaScript Modules -->
+    <script src="./js/business-rules.js"></script>
     <script src="./js/utils.js"></script>
     <script src="./js/database.js"></script>
     <script src="./js/charts.js"></script>

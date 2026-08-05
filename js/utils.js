@@ -21,102 +21,30 @@ const Utils = {
 
     formatDate(dateStr) {
         if (!dateStr) return '-';
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
+        const d = BusinessRules.parseISODate(dateStr);
+        if (!d) return String(dateStr);
         return d.toLocaleDateString('pt-BR');
     },
 
     formatISOToInput(dateStr) {
-        if (!dateStr) return new Date().toISOString().split('T')[0];
-        return new Date(dateStr).toISOString().split('T')[0];
+        if (!dateStr) return BusinessRules.toLocalISO();
+        const parsed = BusinessRules.parseISODate(dateStr);
+        return parsed ? BusinessRules.toLocalISO(parsed) : '';
     },
 
     getTodayISO() {
-        return new Date().toISOString().split('T')[0];
+        return BusinessRules.toLocalISO();
     },
 
     // Financial & KPI Calculations
     calculateKPIs(receitas = [], despesas = [], estoque = [], funcionarios = [], servicos = []) {
-        const now = new Date();
-        const todayStr = this.getTodayISO();
-        
-        // Date range calculations
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        return BusinessRules.calculateKPIs({ receitas, despesas, estoque, funcionarios });
+    },
 
-        let recDia = 0, recSemana = 0, recMes = 0, recAno = 0, totalReceita = 0;
-        let totalAtendimentos = receitas.length;
-        const clientesUnicos = new Set();
-
-        receitas.forEach(r => {
-            const rVal = parseFloat(r.valor) || 0;
-            const rDate = new Date(r.data);
-            totalReceita += rVal;
-            if (r.cliente) clientesUnicos.add(r.cliente.trim().toLowerCase());
-
-            if (r.data === todayStr) recDia += rVal;
-            if (rDate >= startOfWeek) recSemana += rVal;
-            if (rDate >= startOfMonth) recMes += rVal;
-            if (rDate >= startOfYear) recAno += rVal;
-        });
-
-        let despesasFixas = 0;
-        let despesasVariaveis = 0;
-
-        despesas.forEach(d => {
-            const dVal = parseFloat(d.valor) || 0;
-            if (d.tipo === 'fixa') {
-                despesasFixas += dVal;
-            } else {
-                despesasVariaveis += dVal;
-            }
-        });
-
-        const totalDespesas = despesasFixas + despesasVariaveis;
-        const lucroBruto = totalReceita - despesasVariaveis;
-        const lucroLiquido = totalReceita - totalDespesas;
-        const ticketMedio = totalAtendimentos > 0 ? totalReceita / totalAtendimentos : 0;
-        const margemBruta = totalReceita > 0 ? (lucroBruto / totalReceita) * 100 : 0;
-        const margemLiquida = totalReceita > 0 ? (lucroLiquido / totalReceita) * 100 : 0;
-
-        // Break-even point (Ponto de Equilíbrio em R$)
-        // Formula: Custos Fixos / (1 - (Custos Variáveis / Receita))
-        const razVariavel = totalReceita > 0 ? (despesasVariaveis / totalReceita) : 0;
-        const pontoEquilibrio = razVariavel < 1 ? despesasFixas / (1 - razVariavel) : 0;
-
-        // Stock value
-        let valorEstoque = 0;
-        estoque.forEach(i => {
-            valorEstoque += (parseFloat(i.quantidade) || 0) * (parseFloat(i.valorUnitario) || 0);
-        });
-
-        // Employees KPI
-        const funcAtivos = funcionarios.length;
-        const recPorFuncionario = funcAtivos > 0 ? totalReceita / funcAtivos : 0;
-
-        return {
-            recDia,
-            recSemana,
-            recMes,
-            recAno,
-            totalReceita,
-            despesasFixas,
-            despesasVariaveis,
-            totalDespesas,
-            lucroBruto,
-            lucroLiquido,
-            ticketMedio,
-            qtdClientes: clientesUnicos.size || totalAtendimentos,
-            qtdVeiculos: totalAtendimentos,
-            margemBruta,
-            margemLiquida,
-            pontoEquilibrio,
-            valorEstoque,
-            funcAtivos,
-            recPorFuncionario
-        };
+    escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>'"]/g, (char) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        })[char]);
     },
 
     // UI Toast Notification

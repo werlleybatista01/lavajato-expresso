@@ -10,8 +10,8 @@ const ServicosModule = {
     },
 
     async render() {
-        const servicos = await dbService.getAll('servicos');
-        const funcionarios = await dbService.getAll('funcionarios');
+        const servicos = (await dbService.getAll('servicos')).filter(BusinessRules.isActive);
+        const funcionarios = (await dbService.getAll('funcionarios')).filter(BusinessRules.isActive);
         const tbody = document.getElementById('tbody-servicos');
         if (!tbody) return;
 
@@ -36,14 +36,14 @@ const ServicosModule = {
 
             return `
                 <tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                    <td class="py-3.5 px-4 text-xs font-bold text-slate-800 dark:text-slate-100">${s.nome}</td>
+                    <td class="py-3.5 px-4 text-xs font-bold text-slate-800 dark:text-slate-100">${Utils.escapeHTML(s.nome)}</td>
                     <td class="py-3.5 px-4 text-xs">
                         <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                            ${s.categoria || 'Geral'}
+                            ${Utils.escapeHTML(s.categoria || 'Geral')}
                         </span>
                     </td>
                     <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">${s.tempoMedioMin || 30} min</td>
-                    <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">${s.funcionarioResponsavel || 'Qualquer'}</td>
+                    <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">${Utils.escapeHTML(s.funcionarioResponsavel || 'Qualquer')}</td>
                     <td class="py-3.5 px-4 text-xs font-semibold text-rose-600 dark:text-rose-400 text-right">${Utils.formatCurrency(custoTotal)}</td>
                     <td class="py-3.5 px-4 text-xs font-bold text-blue-600 dark:text-blue-400 text-right">${Utils.formatCurrency(valorCobrado)}</td>
                     <td class="py-3.5 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right">${Utils.formatCurrency(lucroBruto)}</td>
@@ -69,7 +69,7 @@ const ServicosModule = {
 
     async openModal(id = null) {
         this.editingId = id;
-        const funcionarios = await dbService.getAll('funcionarios');
+        const funcionarios = (await dbService.getAll('funcionarios')).filter(BusinessRules.isActive);
         const selectFunc = document.getElementById('serv-func');
 
         if (selectFunc) {
@@ -118,6 +118,13 @@ const ServicosModule = {
             Utils.showToast('Informe o nome e um valor válido para o serviço.', 'error');
             return;
         }
+        const duplicate = (await dbService.getAll('servicos')).some((item) =>
+            BusinessRules.isActive(item) && item.id !== this.editingId
+            && BusinessRules.normalizeText(item.nome) === BusinessRules.normalizeText(nome));
+        if (duplicate) {
+            Utils.showToast('Já existe um serviço ativo com este nome.', 'error');
+            return;
+        }
 
         const data = {
             nome,
@@ -126,7 +133,8 @@ const ServicosModule = {
             tempoMedioMin,
             funcionarioResponsavel,
             custoOperacional,
-            custoMateriais
+            custoMateriais,
+            ativo: true
         };
 
         if (this.editingId) {
@@ -143,9 +151,13 @@ const ServicosModule = {
     },
 
     async delete(id) {
-        if (confirm('Tem certeza que deseja apagar este serviço?')) {
-            await dbService.delete('servicos', id);
-            Utils.showToast('Serviço excluído.', 'info');
+        if (confirm('Arquivar este serviço? Os atendimentos antigos permanecerão preservados.')) {
+            const service = await dbService.getById('servicos', id);
+            if (!service) return;
+            service.ativo = false;
+            service.arquivadoEm = new Date().toISOString();
+            await dbService.update('servicos', service);
+            Utils.showToast('Serviço arquivado com histórico preservado.', 'info');
             await App.refreshAllData();
         }
     }

@@ -36,7 +36,7 @@ const RelatoriosModule = {
         if (tipoRelatorio === 'financeiro' || tipoRelatorio === 'lucros') {
             title = 'Relatório de Receitas e Lançamentos Financeiros';
             headers = ['Data', 'Cliente', 'Serviço', 'Forma Pagto', 'Valor'];
-            const receitas = await dbService.getAll('receitas');
+            const receitas = (await dbService.getAll('receitas')).filter(BusinessRules.isActive);
 
             rows = receitas.map(r => [
                 Utils.formatDate(r.data),
@@ -56,7 +56,7 @@ const RelatoriosModule = {
         } else if (tipoRelatorio === 'despesas' || tipoRelatorio === 'custos') {
             title = 'Relatório de Despesas (Fixas e Variáveis)';
             headers = ['Data', 'Tipo', 'Categoria', 'Item', 'Valor'];
-            const despesas = await dbService.getAll('despesas');
+            const despesas = (await dbService.getAll('despesas')).filter(BusinessRules.isActive);
 
             rows = despesas.map(d => [
                 Utils.formatDate(d.data),
@@ -76,7 +76,7 @@ const RelatoriosModule = {
         } else if (tipoRelatorio === 'estoque') {
             title = 'Relatório de Posição de Estoque';
             headers = ['Produto', 'Categoria', 'Quantidade', 'Valor Unit', 'Valor Total', 'Status'];
-            const estoque = await dbService.getAll('estoque');
+            const estoque = (await dbService.getAll('estoque')).filter(BusinessRules.isActive);
 
             rows = estoque.map(e => {
                 const qtd = parseFloat(e.quantidade) || 0;
@@ -102,16 +102,16 @@ const RelatoriosModule = {
             }));
         } else if (tipoRelatorio === 'funcionarios') {
             title = 'Relatório de Desempenho e Comissões da Equipe';
-            headers = ['Nome', 'Cargo', 'Salário Base', 'Comissão (%)', 'Data Admissão'];
-            const funcionarios = await dbService.getAll('funcionarios');
+            headers = ['Nome', 'Cargo', 'Salário Base', 'Receita no mês', 'Comissão no mês', 'Admissão'];
+            const funcionarios = (await dbService.getAll('funcionarios')).filter(BusinessRules.isActive);
+            const receitas = (await dbService.getAll('receitas')).filter(BusinessRules.isActive);
 
-            rows = funcionarios.map(f => [
-                f.nome,
-                f.cargo || 'Lavador',
-                Utils.formatCurrency(f.salario),
-                `${f.comissaoPercent}%`,
-                Utils.formatDate(f.dataAdmissao)
-            ]);
+            rows = funcionarios.map(f => {
+                const performance = BusinessRules.getEmployeePerformance(f, receitas);
+                return [f.nome, f.cargo || 'Lavador', Utils.formatCurrency(f.salario),
+                    Utils.formatCurrency(performance.receita), Utils.formatCurrency(performance.comissao),
+                    Utils.formatDate(f.dataAdmissao)];
+            });
 
             jsonExportData = funcionarios.map(f => ({
                 Nome: f.nome,
@@ -123,7 +123,7 @@ const RelatoriosModule = {
         } else if (tipoRelatorio === 'servicos') {
             title = 'Relatório de Serviços e Precificação';
             headers = ['Serviço', 'Categoria', 'Preço Cobrado', 'Custo Total', 'Lucro Bruto', 'Margem (%)'];
-            const servicos = await dbService.getAll('servicos');
+            const servicos = (await dbService.getAll('servicos')).filter(BusinessRules.isActive);
 
             rows = servicos.map(s => {
                 const preco = parseFloat(s.valorCobrado) || 0;
@@ -153,7 +153,7 @@ const RelatoriosModule = {
             const kpis = Utils.calculateKPIs(receitas, despesas, estoque, funcionarios);
 
             rows = [
-                ['Receita Total Acumulada', Utils.formatCurrency(kpis.totalReceita)],
+                ['Receita do Mês', Utils.formatCurrency(kpis.totalReceita)],
                 ['Lucro Bruto', Utils.formatCurrency(kpis.lucroBruto)],
                 ['Lucro Líquido', Utils.formatCurrency(kpis.lucroLiquido)],
                 ['Margem Líquida', Utils.formatPercent(kpis.margemLiquida)],

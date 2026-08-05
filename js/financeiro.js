@@ -61,7 +61,7 @@ const FinanceiroModule = {
 
     // --- RECEITAS ---
     async renderReceitas() {
-        const receitas = await dbService.getAll('receitas');
+        const receitas = (await dbService.getAll('receitas')).filter(BusinessRules.isActive);
         const tbody = document.getElementById('tbody-receitas');
         if (!tbody) return;
 
@@ -70,7 +70,7 @@ const FinanceiroModule = {
             (r.cliente && r.cliente.toLowerCase().includes(query)) ||
             (r.servico && r.servico.toLowerCase().includes(query)) ||
             (r.formaPagamento && r.formaPagamento.toLowerCase().includes(query))
-        ).sort((a, b) => new Date(b.data) - new Date(a.data));
+        ).sort((a, b) => String(b.data).localeCompare(String(a.data)));
 
         let totalSoma = 0;
 
@@ -83,12 +83,12 @@ const FinanceiroModule = {
                 return `
                     <tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                         <td class="py-3.5 px-4 text-xs font-medium text-slate-600 dark:text-slate-300">${Utils.formatDate(r.data)}</td>
-                        <td class="py-3.5 px-4 text-xs font-semibold text-slate-800 dark:text-slate-100">${r.cliente || 'Cliente Avulso'}</td>
-                        <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">${r.servico || '-'}</td>
-                        <td class="py-3.5 px-4 text-xs font-medium text-slate-500 dark:text-slate-400">${r.funcionario || '-'}</td>
+                        <td class="py-3.5 px-4 text-xs font-semibold text-slate-800 dark:text-slate-100">${Utils.escapeHTML(r.cliente || 'Cliente Avulso')}</td>
+                        <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">${Utils.escapeHTML(r.servicoNome || r.servico || '-')}</td>
+                        <td class="py-3.5 px-4 text-xs font-medium text-slate-500 dark:text-slate-400">${Utils.escapeHTML(r.funcionarioNome || r.funcionario || '-')}</td>
                         <td class="py-3.5 px-4 text-xs">
                             <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                ${r.formaPagamento || 'Pix'}
+                                ${Utils.escapeHTML(r.formaPagamento || 'Pix')}
                             </span>
                         </td>
                         <td class="py-3.5 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right">${Utils.formatCurrency(val)}</td>
@@ -107,8 +107,8 @@ const FinanceiroModule = {
     },
 
     async openNovaReceitaModal() {
-        const servicos = await dbService.getAll('servicos');
-        const funcionarios = await dbService.getAll('funcionarios');
+        const servicos = (await dbService.getAll('servicos')).filter(BusinessRules.isActive);
+        const funcionarios = (await dbService.getAll('funcionarios')).filter(BusinessRules.isActive);
         const clientes = await dbService.getAll('clientes');
 
         const selectServico = document.getElementById('rec-servico');
@@ -117,7 +117,7 @@ const FinanceiroModule = {
 
         if (selectServico) {
             selectServico.innerHTML = '<option value="">Selecione um serviço...</option>' + 
-                servicos.map(s => `<option value="${s.nome}" data-valor="${s.valorCobrado}">${s.nome} (${Utils.formatCurrency(s.valorCobrado)})</option>`).join('');
+                servicos.map(s => `<option value="${s.id}" data-nome="${Utils.escapeHTML(s.nome)}" data-valor="${BusinessRules.toNumber(s.valorCobrado)}" data-custo="${BusinessRules.toNumber(s.custoOperacional) + BusinessRules.toNumber(s.custoMateriais)}">${Utils.escapeHTML(s.nome)} (${Utils.formatCurrency(s.valorCobrado)})</option>`).join('');
             
             selectServico.onchange = (e) => {
                 const opt = e.target.selectedOptions[0];
@@ -129,7 +129,7 @@ const FinanceiroModule = {
 
         if (selectFunc) {
             selectFunc.innerHTML = '<option value="">Selecione o responsável...</option>' + 
-                funcionarios.map(f => `<option value="${f.nome}">${f.nome} - ${f.cargo}</option>`).join('');
+                funcionarios.map(f => `<option value="${f.id}" data-nome="${Utils.escapeHTML(f.nome)}" data-comissao="${BusinessRules.toNumber(f.comissaoPercent)}">${Utils.escapeHTML(f.nome)} - ${Utils.escapeHTML(f.cargo)}</option>`).join('');
         }
 
         if (selectCliente) {
@@ -148,13 +148,21 @@ const FinanceiroModule = {
         e.preventDefault();
         const data = document.getElementById('rec-data').value;
         const clienteInput = document.getElementById('rec-cliente-custom').value || document.getElementById('rec-cliente').value || 'Cliente Avulso';
-        const servico = document.getElementById('rec-servico').value;
-        const funcionario = document.getElementById('rec-funcionario').value;
+        const servicoSelect = document.getElementById('rec-servico');
+        const servicoOption = servicoSelect.selectedOptions[0];
+        const servicoId = servicoSelect.value ? Number(servicoSelect.value) : null;
+        const servicoNome = servicoOption?.dataset.nome || '';
+        const custoServicoSnapshot = BusinessRules.toNumber(servicoOption?.dataset.custo);
+        const funcionarioSelect = document.getElementById('rec-funcionario');
+        const funcionarioOption = funcionarioSelect.selectedOptions[0];
+        const funcionarioId = funcionarioSelect.value ? Number(funcionarioSelect.value) : null;
+        const funcionarioNome = funcionarioOption?.dataset.nome || '';
+        const comissaoPercentSnapshot = BusinessRules.toNumber(funcionarioOption?.dataset.comissao);
         const formaPagamento = document.getElementById('rec-forma').value;
         const valor = parseFloat(document.getElementById('rec-valor').value) || 0;
         const observacoes = document.getElementById('rec-obs').value;
 
-        if (!data || !valor || valor <= 0) {
+        if (!BusinessRules.parseISODate(data) || !valor || valor <= 0) {
             Utils.showToast('Preencha a data e o valor da receita!', 'error');
             return;
         }
@@ -162,11 +170,18 @@ const FinanceiroModule = {
         await dbService.add('receitas', {
             data,
             cliente: clienteInput,
-            servico,
-            funcionario,
+            servicoId,
+            servicoNome,
+            servico: servicoNome,
+            custoServicoSnapshot,
+            funcionarioId,
+            funcionarioNome,
+            funcionario: funcionarioNome,
+            comissaoPercentSnapshot,
             formaPagamento,
             valor,
-            observacoes
+            observacoes,
+            ativo: true
         });
 
         Utils.showToast('Receita lançada com sucesso!', 'success');
@@ -176,16 +191,21 @@ const FinanceiroModule = {
     },
 
     async deleteReceita(id) {
-        if (confirm('Tem certeza que deseja excluir esta receita?')) {
-            await dbService.delete('receitas', id);
-            Utils.showToast('Receita removida.', 'info');
+        if (confirm('Estornar esta receita? O registro permanecerá no histórico de auditoria.')) {
+            const record = await dbService.getById('receitas', id);
+            if (!record) return;
+            record.status = 'estornado';
+            record.ativo = false;
+            record.estornadoEm = new Date().toISOString();
+            await dbService.update('receitas', record);
+            Utils.showToast('Receita estornada com histórico preservado.', 'info');
             await App.refreshAllData();
         }
     },
 
     // --- DESPESAS ---
     async renderDespesas() {
-        const despesas = await dbService.getAll('despesas');
+        const despesas = (await dbService.getAll('despesas')).filter(BusinessRules.isActive);
         const tbody = document.getElementById('tbody-despesas');
         if (!tbody) return;
 
@@ -193,7 +213,7 @@ const FinanceiroModule = {
         const filtradas = despesas.filter(d => 
             (d.item && d.item.toLowerCase().includes(query)) ||
             (d.categoria && d.categoria.toLowerCase().includes(query))
-        ).sort((a, b) => new Date(b.data) - new Date(a.data));
+        ).sort((a, b) => String(b.data).localeCompare(String(a.data)));
 
         let totalFixas = 0;
         let totalVariaveis = 0;
@@ -218,9 +238,9 @@ const FinanceiroModule = {
                                 ${d.tipo === 'fixa' ? 'Fixa' : 'Variável'}
                             </span>
                         </td>
-                        <td class="py-3.5 px-4 text-xs font-semibold text-slate-800 dark:text-slate-200">${d.categoria || '-'}</td>
-                        <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">${d.item || '-'}</td>
-                        <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">${d.observacoes || '-'}</td>
+                        <td class="py-3.5 px-4 text-xs font-semibold text-slate-800 dark:text-slate-200">${Utils.escapeHTML(d.categoria || '-')}</td>
+                        <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">${Utils.escapeHTML(d.item || '-')}</td>
+                        <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">${Utils.escapeHTML(d.observacoes || '-')}</td>
                         <td class="py-3.5 px-4 text-xs font-bold text-rose-600 dark:text-rose-400 text-right">${Utils.formatCurrency(val)}</td>
                         <td class="py-3.5 px-4 text-xs text-right">
                             <button onclick="FinanceiroModule.deleteDespesa(${d.id})" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 p-1.5 transition">
@@ -259,7 +279,7 @@ const FinanceiroModule = {
         const valor = parseFloat(document.getElementById('desp-valor').value) || 0;
         const observacoes = document.getElementById('desp-obs').value;
 
-        if (!data || !item || !valor || valor <= 0) {
+        if (!BusinessRules.parseISODate(data) || !item || !valor || valor <= 0) {
             Utils.showToast('Preencha os campos obrigatórios da despesa!', 'error');
             return;
         }
@@ -270,7 +290,8 @@ const FinanceiroModule = {
             categoria,
             item,
             valor,
-            observacoes
+            observacoes,
+            ativo: true
         });
 
         Utils.showToast('Despesa cadastrada!', 'success');
@@ -280,9 +301,14 @@ const FinanceiroModule = {
     },
 
     async deleteDespesa(id) {
-        if (confirm('Deseja realmente remover esta despesa?')) {
-            await dbService.delete('despesas', id);
-            Utils.showToast('Despesa excluída.', 'info');
+        if (confirm('Estornar esta despesa? O registro permanecerá no histórico de auditoria.')) {
+            const record = await dbService.getById('despesas', id);
+            if (!record) return;
+            record.status = 'estornado';
+            record.ativo = false;
+            record.estornadoEm = new Date().toISOString();
+            await dbService.update('despesas', record);
+            Utils.showToast('Despesa estornada com histórico preservado.', 'info');
             await App.refreshAllData();
         }
     },
@@ -308,7 +334,7 @@ const FinanceiroModule = {
             elSaldo.className = `text-2xl font-bold ${kpis.lucroLiquido >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`;
         }
 
-        chartManager.renderFluxoCaixaChart('chart-fluxo-caixa-full', receitas, despesas);
+        chartManager.renderFluxoCaixaChart('chart-fluxo-caixa-full', receitas.filter(BusinessRules.isActive), despesas.filter(BusinessRules.isActive));
     },
 
     // --- DRE (Demonstração do Resultado do Exercício) ---

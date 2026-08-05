@@ -49,7 +49,7 @@ class ChartManager {
         for (let i = 6; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
-            const iso = d.toISOString().split('T')[0];
+            const iso = BusinessRules.toLocalISO(d);
             const label = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
             daysMap[iso] = { label, total: 0 };
         }
@@ -229,7 +229,7 @@ class ChartManager {
         for (let i = 14; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
-            const iso = d.toISOString().split('T')[0];
+            const iso = BusinessRules.toLocalISO(d);
             const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
             daysMap[iso] = { label, entradas: 0, saidas: 0 };
         }
@@ -291,8 +291,12 @@ class ChartManager {
         const colors = this.getThemeColors();
         const servMap = {};
 
-        receitas.forEach(r => {
-            const sName = r.servico || 'Outros';
+        const { monthStart, monthEnd } = BusinessRules.getRanges();
+        receitas.filter((item) => {
+            const date = BusinessRules.parseISODate(item.data);
+            return date && date >= monthStart && date < monthEnd;
+        }).forEach(r => {
+            const sName = r.servicoNome || r.servico || 'Outros';
             servMap[sName] = (servMap[sName] || 0) + 1;
         });
 
@@ -336,8 +340,12 @@ class ChartManager {
         const colors = this.getThemeColors();
         const funcMap = {};
 
-        receitas.forEach(r => {
-            const func = r.funcionario || 'Não Atribuído';
+        const { monthStart, monthEnd } = BusinessRules.getRanges();
+        receitas.filter((item) => {
+            const date = BusinessRules.parseISODate(item.data);
+            return date && date >= monthStart && date < monthEnd;
+        }).forEach(r => {
+            const func = r.funcionarioNome || r.funcionario || 'Não Atribuído';
             funcMap[func] = (funcMap[func] || 0) + (parseFloat(r.valor) || 0);
         });
 

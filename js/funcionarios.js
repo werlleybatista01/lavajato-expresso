@@ -10,7 +10,7 @@ const FuncionariosModule = {
     },
 
     async render() {
-        const funcionarios = await dbService.getAll('funcionarios');
+        const funcionarios = (await dbService.getAll('funcionarios')).filter(BusinessRules.isActive);
         const receitas = await dbService.getAll('receitas');
         const tbody = document.getElementById('tbody-funcionarios');
         if (!tbody) return;
@@ -26,24 +26,16 @@ const FuncionariosModule = {
                 const comissaoPercent = parseFloat(f.comissaoPercent) || 0;
                 totalFolha += salario;
 
-                // Receita produzida e veículos por este funcionário
-                let recProduzida = 0;
-                let veiculosAtendidos = 0;
-
-                receitas.forEach(r => {
-                    if (r.funcionario && r.funcionario.trim().toLowerCase() === f.nome.trim().toLowerCase()) {
-                        recProduzida += parseFloat(r.valor) || 0;
-                        veiculosAtendidos++;
-                    }
-                });
-
-                const valorComissao = (recProduzida * comissaoPercent) / 100;
+                const desempenho = BusinessRules.getEmployeePerformance(f, receitas);
+                const recProduzida = desempenho.receita;
+                const veiculosAtendidos = desempenho.atendimentos;
+                const valorComissao = desempenho.comissao;
                 totalComissoesGeral += valorComissao;
 
                 return `
                     <tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                        <td class="py-3.5 px-4 text-xs font-bold text-slate-800 dark:text-slate-100">${f.nome}</td>
-                        <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">${f.cargo || 'Lavador'}</td>
+                        <td class="py-3.5 px-4 text-xs font-bold text-slate-800 dark:text-slate-100">${Utils.escapeHTML(f.nome)}</td>
+                        <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">${Utils.escapeHTML(f.cargo || 'Lavador')}</td>
                         <td class="py-3.5 px-4 text-xs font-medium text-slate-500 dark:text-slate-400">${Utils.formatDate(f.dataAdmissao)}</td>
                         <td class="py-3.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-200 text-right">${Utils.formatCurrency(salario)}</td>
                         <td class="py-3.5 px-4 text-xs font-bold text-center text-blue-600 dark:text-blue-400">${veiculosAtendidos} veículos</td>
@@ -56,7 +48,7 @@ const FuncionariosModule = {
                                 <button onclick="FuncionariosModule.openModal(${f.id})" title="Editar" class="text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 p-1.5 transition">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </button>
-                                <button onclick="FuncionariosModule.delete(${f.id})" title="Excluir" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 p-1.5 transition">
+                                <button onclick="FuncionariosModule.delete(${f.id})" title="Desativar funcionário" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 p-1.5 transition">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
@@ -111,13 +103,21 @@ const FuncionariosModule = {
             Utils.showToast('Preencha o nome e o salário do funcionário.', 'error');
             return;
         }
+        const duplicate = (await dbService.getAll('funcionarios')).some((item) =>
+            BusinessRules.isActive(item) && item.id !== this.editingId
+            && BusinessRules.normalizeText(item.nome) === BusinessRules.normalizeText(nome));
+        if (duplicate) {
+            Utils.showToast('Já existe um funcionário ativo com este nome.', 'error');
+            return;
+        }
 
         const data = {
             nome,
             cargo,
             salario,
             comissaoPercent,
-            dataAdmissao
+            dataAdmissao,
+            ativo: true
         };
 
         if (this.editingId) {
@@ -134,9 +134,13 @@ const FuncionariosModule = {
     },
 
     async delete(id) {
-        if (confirm('Tem certeza que deseja apagar este funcionário?')) {
-            await dbService.delete('funcionarios', id);
-            Utils.showToast('Funcionário removido.', 'info');
+        if (confirm('Desativar este funcionário? A equipe e a folha projetada serão recalculadas. Despesas de salários já lançadas não serão apagadas, pois representam registros contábeis históricos.')) {
+            const employee = await dbService.getById('funcionarios', id);
+            if (!employee) return;
+            employee.ativo = false;
+            employee.dataDesligamento = Utils.getTodayISO();
+            await dbService.update('funcionarios', employee);
+            Utils.showToast('Funcionário desativado e histórico preservado.', 'info');
             await App.refreshAllData();
         }
     }

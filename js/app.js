@@ -4,8 +4,14 @@
 
 const App = {
     currentTab: 'dashboard',
+    initPromise: null,
 
-    async init() {
+    init() {
+        if (!this.initPromise) this.initPromise = this.initialize();
+        return this.initPromise;
+    },
+
+    async initialize() {
         console.log('Initializing Lava Jato Expresso ERP...');
 
         try {
@@ -31,7 +37,7 @@ const App = {
             if (window.RelatoriosModule) await RelatoriosModule.init();
 
             // Show default tab
-            this.switchTab('dashboard');
+            await this.switchTab('dashboard');
 
             console.log('Car Wash ERP fully loaded and offline ready!');
         } catch (error) {
@@ -96,7 +102,7 @@ const App = {
         }
     },
 
-    switchTab(tabName) {
+    async switchTab(tabName) {
         this.currentTab = tabName;
 
         // Hide all views
@@ -118,7 +124,7 @@ const App = {
         });
 
         // Refresh tab data
-        this.refreshTab(tabName);
+        await this.refreshTab(tabName);
     },
 
     async refreshTab(tabName) {
@@ -205,10 +211,14 @@ const App = {
 
     // Reset database to initial seed data
     async resetToSeedData() {
-        if (confirm('Atenção: Isso irá restaurar o banco de dados para os dados de demonstração iniciais. Deseja continuar?')) {
-            indexedDB.deleteDatabase('CarWashDB');
-            Utils.showToast('Banco de dados resetado. Recarregando...', 'info');
-            setTimeout(() => location.reload(), 1000);
+        if (confirm('Atenção: isso apagará definitivamente todos os dados deste navegador e iniciará uma base vazia. Faça um backup antes. Deseja continuar?')) {
+            try {
+                await dbService.resetDatabase();
+                Utils.showToast('Base local apagada. Recarregando...', 'info');
+                setTimeout(() => location.reload(), 700);
+            } catch (error) {
+                Utils.showToast(error.message || 'Não foi possível apagar a base.', 'error');
+            }
         }
     }
 };

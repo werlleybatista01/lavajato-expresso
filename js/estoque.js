@@ -10,7 +10,7 @@ const EstoqueModule = {
     },
 
     async render() {
-        const estoque = await dbService.getAll('estoque');
+        const estoque = (await dbService.getAll('estoque')).filter(BusinessRules.isActive);
         const tbody = document.getElementById('tbody-estoque');
         if (!tbody) return;
 
@@ -45,10 +45,10 @@ const EstoqueModule = {
 
                 return `
                     <tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                        <td class="py-3.5 px-4 text-xs font-bold text-slate-800 dark:text-slate-100">${item.nome}</td>
+                        <td class="py-3.5 px-4 text-xs font-bold text-slate-800 dark:text-slate-100">${Utils.escapeHTML(item.nome)}</td>
                         <td class="py-3.5 px-4 text-xs">
                             <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                                ${item.categoria || 'Geral'}
+                                ${Utils.escapeHTML(item.categoria || 'Geral')}
                             </span>
                         </td>
                         <td class="py-3.5 px-4 text-xs font-bold text-slate-700 dark:text-slate-200">${qtd} ${item.unidade || 'Un'}</td>
@@ -56,7 +56,7 @@ const EstoqueModule = {
                         <td class="py-3.5 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right">${Utils.formatCurrency(vTotal)}</td>
                         <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">~${diasRestantes} dias</td>
                         <td class="py-3.5 px-4 text-xs">${statusBadge}</td>
-                        <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">${item.fornecedor || '-'}</td>
+                        <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">${Utils.escapeHTML(item.fornecedor || '-')}</td>
                         <td class="py-3.5 px-4 text-xs text-right">
                             <div class="flex items-center justify-end gap-1.5">
                                 <button onclick="EstoqueModule.openMovimentacaoModal(${item.id})" title="Registrar Entrada/Saída" class="text-emerald-600 hover:text-emerald-800 dark:hover:text-emerald-400 p-1.5 transition">
@@ -132,6 +132,13 @@ const EstoqueModule = {
             Utils.showToast('Preencha os dados do produto corretamente.', 'error');
             return;
         }
+        const duplicate = (await dbService.getAll('estoque')).some((item) =>
+            BusinessRules.isActive(item) && item.id !== this.editingId
+            && BusinessRules.normalizeText(item.nome) === BusinessRules.normalizeText(nome));
+        if (duplicate) {
+            Utils.showToast('Já existe um item ativo com este nome no estoque.', 'error');
+            return;
+        }
 
         const data = {
             nome,
@@ -141,7 +148,8 @@ const EstoqueModule = {
             valorUnitario,
             quantidadeMinima,
             fornecedor,
-            dataCompra
+            dataCompra,
+            ativo: true
         };
 
         if (this.editingId) {
@@ -182,24 +190,12 @@ const EstoqueModule = {
             return;
         }
 
-        if (tipo === 'saida' && item.quantidade < qtdMov) {
-            Utils.showToast(`Estoque insuficiente! Você tem apenas ${item.quantidade} ${item.unidade}(s).`, 'error');
+        try {
+            await dbService.moveStock({ itemId: id, tipo, quantidade: qtdMov, motivo, data: Utils.getTodayISO() });
+        } catch (error) {
+            Utils.showToast(error.message || 'Não foi possível movimentar o estoque.', 'error');
             return;
         }
-
-        const novaQtd = tipo === 'entrada' ? item.quantidade + qtdMov : item.quantidade - qtdMov;
-        item.quantidade = novaQtd;
-        await dbService.update('estoque', item);
-
-        // Record history
-        await dbService.add('movimentacoes', {
-            data: Utils.getTodayISO(),
-            tipo,
-            quantidade: qtdMov,
-            produtoId: id,
-            produtoNome: item.nome,
-            motivo
-        });
 
         Utils.showToast(`Movimentação de ${tipo.toUpperCase()} realizada com sucesso!`, 'success');
         document.getElementById('modal-movimentacao').classList.add('hidden');
@@ -208,9 +204,17 @@ const EstoqueModule = {
     },
 
     async delete(id) {
-        if (confirm('Tem certeza que deseja apagar este item do estoque?')) {
-            await dbService.delete('estoque', id);
-            Utils.showToast('Item excluído.', 'info');
+        const item = await dbService.getById('estoque', id);
+        if (!item) return;
+        if (BusinessRules.toNumber(item.quantidade) !== 0) {
+            Utils.showToast('Zere o saldo do item antes de arquivá-lo.', 'warning');
+            return;
+        }
+        if (confirm('Arquivar este item? O histórico de movimentações será preservado.')) {
+            item.ativo = false;
+            item.arquivadoEm = new Date().toISOString();
+            await dbService.update('estoque', item);
+            Utils.showToast('Item arquivado com histórico preservado.', 'info');
             await App.refreshAllData();
         }
     }
