@@ -1,49 +1,50 @@
 # Lava Jato Expresso ERP
 
-Sistema web estático, offline-first, para controle financeiro e operacional de lava-jato. Os dados ficam no navegador por meio do IndexedDB; não existe servidor ou banco remoto nesta versão.
+ERP web multiusuário para operação, finanças, equipe, serviços e estoque. A versão 2 substitui a persistência local em IndexedDB por uma arquitetura online com React, TypeScript, PostgreSQL e Supabase Auth.
 
-## Estrutura
+## Arquitetura
 
-```text
-.
-├── index.html          # Interface e modais
-├── css/
-│   └── style.css       # Estilos próprios
-├── js/
-│   ├── app.js          # Inicialização, navegação e tema
-│   ├── database.js     # Persistência IndexedDB
-│   ├── utils.js        # Utilitários compartilhados
-│   └── *.js            # Módulos de domínio
-└── scripts/
-    └── verify.mjs      # Validação de assets e sintaxe
-```
+- React 19 + TypeScript + Vite para a aplicação web responsiva.
+- TanStack Query para cache, atualização e estados de rede.
+- Supabase Auth para sessões e identidade de usuário.
+- PostgreSQL como fonte central dos dados.
+- Row Level Security em todas as tabelas públicas, isolando cada organização.
+- Papéis `owner`, `admin`, `operator` e `viewer`.
+- Movimentação de estoque atômica por RPC e trilha de auditoria no banco.
+- Receitas preservam nomes, custos e comissões como snapshots históricos.
+- Migrações versionadas em `supabase/migrations`.
 
 ## Desenvolvimento
 
-Requer Node.js 20 ou superior somente para as verificações locais.
-
 ```bash
-npm run check
-npm run serve
+cp .env.example .env.local
+npm install
+npm run dev
 ```
 
-Não abra o HTML diretamente por `file://`; use um servidor HTTP local para reproduzir o comportamento do GitHub Pages.
+Preencha `.env.local` somente com a URL e a chave **publicável** do projeto. Nunca use a chave secreta ou `service_role` no navegador.
 
-## Publicação
+## Qualidade
 
-O projeto é compatível com GitHub Pages usando a branch `main` e a pasta raiz (`/`). Os caminhos de CSS e JavaScript são relativos para funcionar no subdiretório `/lavajato-expresso/`.
+```bash
+npm run test
+npm run build
+npm run check
+```
 
-## Dados e segurança
+`npm run check` é a barreira obrigatória de publicação: testa as regras financeiras e compila o bundle de produção com checagem estrita de tipos.
 
-- Os registros são armazenados somente no navegador e não sincronizam entre dispositivos.
-- Limpar os dados do navegador apaga a base local.
-- Faça exportações periódicas na área de relatórios.
-- Funcionários, serviços e itens de estoque são arquivados em vez de apagados, preservando vínculos históricos.
-- Receitas e despesas são estornadas, mantendo trilha de auditoria no backup.
-- Indicadores de lucro, despesas, ticket e comissões usam o mês corrente; receita anual e acumulada são calculadas separadamente.
-- Salários já lançados em despesas não são apagados ao desativar um funcionário. A folha projetada da equipe ativa é recalculada separadamente da contabilidade realizada.
-- Esta arquitetura é adequada para produção individual offline em um único navegador. Uso multiusuário exige API autenticada, banco central, controle de acesso, logs no servidor e política de backup testada.
+## Regras de integridade
 
-## Validação antes da publicação
+- Exclusões operacionais usam arquivamento ou estorno; lançamentos históricos não são recalculados a partir do cadastro atual.
+- Um funcionário arquivado deixa a equipe ativa, mas sua comissão congelada continua no atendimento original.
+- O banco impede vínculos entre registros de organizações diferentes.
+- O último proprietário ativo não pode ser removido.
+- Entradas e saídas de estoque são serializadas e não aceitam saldo negativo.
+- Toda escrita passa por RLS e as principais entidades mantêm auditoria de antes/depois.
 
-`npm run check` valida referências de assets, sintaxe dos módulos, regras financeiras, datas locais, comissões, precificação, transações de estoque e um fluxo de interface simulado.
+## Produção
+
+O frontend pode ser servido pelo GitHub Pages; dados, autenticação e autorização ficam no Supabase na região `sa-east-1`. Antes de promover uma versão, execute testes, advisors de segurança/desempenho e valide login, permissões de cada papel, estorno, arquivamento e estoque em homologação.
+
+Backups e recuperação devem seguir a política do plano contratado no Supabase. Para operação crítica, habilite PITR e teste restauração periodicamente.
